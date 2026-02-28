@@ -1,10 +1,38 @@
 "use client"
 import { useState } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { MapPin, ShoppingCart, LogOut, Printer, Pencil, Trash2, PlusCircle } from "lucide-react"
 
 export default function Navbar() {
+    const router = useRouter()
     const [isLocationOpen, setIsLocationOpen] = useState(false);
+
+    const handleLogout = async () => {
+        try {
+            // เรียก API logout ที่ backend
+            const token = localStorage.getItem('access_token')
+            await fetch('http://localhost:3001/api/auth/logout', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                },
+            })
+        } catch {
+            // ไม่ว่า logout API จะสำเร็จหรือไม่ ก็ลบ token ฝั่ง client อยู่ดี
+        }
+
+        // ลบข้อมูลจาก localStorage
+        localStorage.removeItem('access_token')
+        localStorage.removeItem('refresh_token')
+        localStorage.removeItem('user')
+
+        // ลบ cookie (set expire เป็นอดีต)
+        document.cookie = 'access_token=; path=/; max-age=0'
+
+        // redirect ไปหน้า login
+        window.location.href = '/auth/login'
+    }
 
     return (
         <div className="bg-white">
@@ -120,7 +148,7 @@ export default function Navbar() {
 
                     <div className="h-10 w-[1px] bg-[#eaf6f8] mx-2"></div>
 
-                    <button className="flex items-center gap-2 px-6 py-2.5 bg-white border border-[#e0e0e0] rounded-2xl font-bold text-[#455a64] shadow-sm hover:bg-gray-50 transition-all">
+                    <button onClick={handleLogout} className="flex items-center gap-2 px-6 py-2.5 bg-white border border-[#e0e0e0] rounded-2xl font-bold text-[#455a64] shadow-sm hover:bg-gray-50 transition-all">
                         <LogOut size={20} className="rotate-180" />
                         ออกจากระบบ
                     </button>
