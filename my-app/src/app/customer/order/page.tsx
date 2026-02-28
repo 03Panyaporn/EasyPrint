@@ -172,7 +172,17 @@ export default function OrderPage() {
                                         ย้อนกลับ
                                     </button>
                                     <button
-                                        onClick={() => console.log('เพิ่มลงตะกร้า')}
+                                        onClick={() => {
+                                            if (!selectedFile) {
+                                                alert('กรุณาอัปโหลดไฟล์ก่อน')
+                                                return
+                                            }
+                                            if (!documentType || !documentDetail || !documentSize) {
+                                                alert('กรุณากรอกข้อมูลให้ครบถ้วน')
+                                                return
+                                            }
+                                            alert(`เพิ่มลงตะกร้าสำเร็จ!\n\nไฟล์: ${selectedFile.name}\nประเภท: ${documentType}\nจำนวน: ${quantity} ชุด\nราคารวม: ${totalPrice} บาท`)
+                                        }}
                                         className="px-8 py-2 text-sm bg-gradient-to-r from-[#06B6D4] to-[#0891b2] text-white font-semibold rounded-full active:scale-95 transition-all duration-200 shadow-md hover:shadow-[#06B6D4]/40 hover:shadow-xl flex items-center gap-2">
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                                             <circle cx="9" cy="21" r="1" /><circle cx="20" cy="21" r="1" />

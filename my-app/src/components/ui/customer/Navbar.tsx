@@ -24,7 +24,7 @@ export default function Navbar() {
 
         document.cookie = 'access_token=; path=/; max-age=0'
 
-        window.location.href = '/auth/login'
+        window.location.href = '/'
     }
 
     return (
