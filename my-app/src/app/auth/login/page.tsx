@@ -1,9 +1,13 @@
 'use client'
 
 import { useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 
 export default function LoginPage() {
+    const searchParams = useSearchParams()
+    const redirectTo = searchParams.get('redirect') || '/customer'
+
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
     const [error, setError] = useState('')
@@ -28,11 +32,15 @@ export default function LoginPage() {
                 return
             }
 
+            // เก็บใน localStorage (สำหรับ client-side)
             localStorage.setItem('access_token', data.session.access_token)
             localStorage.setItem('refresh_token', data.session.refresh_token)
             localStorage.setItem('user', JSON.stringify(data.user))
 
-            window.location.href = '/'
+            // เก็บใน cookie (สำหรับ middleware server-side)
+            document.cookie = `access_token=${data.session.access_token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`
+
+            window.location.href = redirectTo
         } catch {
             setError('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้')
         } finally {

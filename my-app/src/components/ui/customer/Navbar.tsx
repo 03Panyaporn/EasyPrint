@@ -5,6 +5,28 @@ import Link from "next/link"
 export default function Navbar() {
     const [cartCount] = useState(0); // TODO: เชื่อมกับ cart state จริงในอนาคต
 
+    const handleLogout = async () => {
+        try {
+            const token = localStorage.getItem('access_token')
+            await fetch('http://localhost:3001/api/auth/logout', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                },
+            })
+        } catch {
+            // ไม่ว่า logout API จะสำเร็จหรือไม่ ก็ลบ token ฝั่ง client อยู่ดี
+        }
+
+        localStorage.removeItem('access_token')
+        localStorage.removeItem('refresh_token')
+        localStorage.removeItem('user')
+
+        document.cookie = 'access_token=; path=/; max-age=0'
+
+        window.location.href = '/auth/login'
+    }
+
     return (
         <div className="bg-white">
             {/* Top status bar */}
@@ -85,7 +107,10 @@ export default function Navbar() {
                     </div>
 
                     {/* ปุ่มออกจากระบบ */}
-                    <button className="group flex items-center gap-2 border border-[#D9D9D9] rounded-full px-4 py-2 text-sm text-gray-500 hover:border-red-400 hover:text-red-500 hover:bg-red-50 active:scale-95 transition-all duration-200 shadow-sm">
+                    <button
+                        onClick={handleLogout}
+                        className="group flex items-center gap-2 border border-[#D9D9D9] rounded-full px-4 py-2 text-sm text-gray-500 hover:border-red-400 hover:text-red-500 hover:bg-red-50 active:scale-95 transition-all duration-200 shadow-sm"
+                    >
                         <svg
                             width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
                             className="group-hover:translate-x-0.5 transition-transform duration-200"
