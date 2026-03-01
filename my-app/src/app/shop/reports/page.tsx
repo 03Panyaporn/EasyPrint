@@ -19,7 +19,7 @@ export default function ReportsPage() {
                 <div className="flex-1 mr-6 flex items-center justify-between">
                     <div>
                         <h1 className="text-3xl font-bold text-[#455a64]">
-                            รายงาน (Reports & Analytics)
+                            รายงาน
                         </h1>
                         <p className="text-[13px] text-gray-500 mt-1">
                             ข้อมูลเชิงลึกเกี่ยวกับผลประกอบการร้านค้าของคุณ
