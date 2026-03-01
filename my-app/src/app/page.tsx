@@ -261,54 +261,7 @@ function AuthModal({
   )
 }
 
-// ─────────────────────────────────────────────
-// Feature Card Data
-// ─────────────────────────────────────────────
-const features = [
-  {
-    icon: (
-      <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-      </svg>
-    ),
-    title: "สั่งพิมพ์ออนไลน์",
-    desc: "อัปโหลดไฟล์ เลือกตัวเลือกการพิมพ์ สั่งพิมพ์ได้ทันทีจากทุกที่",
-  },
-  {
-    icon: (
-      <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-      </svg>
-    ),
-    title: "คำนวณราคาอัตโนมัติ",
-    desc: "คิดราคาแม่นยำโปร่งใส ดูราคาก่อนยืนยันสั่ง ไม่มีค่าใช้จ่ายซ่อน",
-  },
-  {
-    icon: (
-      <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-      </svg>
-    ),
-    title: "แจ้งเตือนสถานะ",
-    desc: "ติดตามงานพิมพ์ได้แบบเรียลไทม์ รู้ทันทุกขั้นตอนจนถึงมือ",
-  },
-  {
-    icon: (
-      <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-      </svg>
-    ),
-    title: "แชทกับร้านค้า",
-    desc: "สอบถามรายละเอียด พูดคุยกับร้านค้าได้โดยตรงผ่านระบบแชท",
-  },
-]
 
-const steps = [
-  { step: "01", title: "สมัครสมาชิก", desc: "สร้างบัญชีฟรีภายในไม่กี่วินาที" },
-  { step: "02", title: "อัปโหลดไฟล์", desc: "เลือกไฟล์ที่ต้องการพิมพ์ (PDF, DOC, รูปภาพ)" },
-  { step: "03", title: "เลือกตัวเลือก", desc: "กำหนดขนาด ประเภท จำนวน และตัวเลือกเพิ่มเติม" },
-  { step: "04", title: "รับงานพิมพ์", desc: "ติดตามสถานะและรับงานพิมพ์ตามที่ต้องการ" },
-]
 
 // ─────────────────────────────────────────────
 // Landing Page
@@ -346,8 +299,6 @@ export default function Home() {
 
           {/* Nav Links */}
           <div className="hidden md:flex items-center gap-8 text-sm font-medium text-[#78909c]">
-            <a href="#features" className="hover:text-[#06B6D4] transition-colors">จุดเด่น</a>
-            <a href="#how-it-works" className="hover:text-[#06B6D4] transition-colors">วิธีใช้งาน</a>
             <a href="#contact" className="hover:text-[#06B6D4] transition-colors">ติดต่อ</a>
           </div>
 
@@ -455,74 +406,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ═══════ Features Section ═══════ */}
-      <section id="features" className="bg-[#FAFCFD] py-14 lg:py-20 border-t border-[#E0F3F7]">
-        <div className="max-w-7xl mx-auto px-6 lg:px-8">
-          <div className="text-center mb-10">
-            <p className="text-[#06B6D4] font-semibold text-xs uppercase tracking-widest mb-2">Features</p>
-            <h2 className="text-2xl lg:text-3xl font-bold text-[#455a64]">ทำไมต้อง EasyPrint?</h2>
-            <p className="text-[#90a4ae] text-sm mt-3 max-w-md mx-auto">
-              ระบบสั่งพิมพ์ออนไลน์ที่ออกแบบมาให้ใช้งานง่าย สะดวก ครบจบในที่เดียว
-            </p>
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {features.map((f, i) => (
-              <div
-                key={i}
-                className="bg-white rounded-2xl p-7 border border-[#eaf6f8] shadow-sm hover:shadow-lg hover:shadow-[#06B6D4]/5 hover:-translate-y-1 transition-all duration-300 group"
-              >
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#E0F7FA] to-[#B2EBF2] text-[#06B6D4] flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300">
-                  {f.icon}
-                </div>
-                <h3 className="text-base font-bold text-[#455a64] mb-2">{f.title}</h3>
-                <p className="text-sm text-[#90a4ae] leading-relaxed">{f.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ═══════ How It Works ═══════ */}
-      <section id="how-it-works" className="py-14 lg:py-20">
-        <div className="max-w-7xl mx-auto px-6 lg:px-8">
-          <div className="text-center mb-10">
-            <p className="text-[#06B6D4] font-semibold text-xs uppercase tracking-widest mb-2">How It Works</p>
-            <h2 className="text-2xl lg:text-3xl font-bold text-[#455a64]">ขั้นตอนง่ายๆ</h2>
-            <p className="text-[#90a4ae] text-sm mt-3 max-w-md mx-auto">
-              เพียง 4 ขั้นตอนก็พร้อมรับงานพิมพ์คุณภาพ
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {steps.map((s, i) => (
-              <div key={i} className="relative text-center group">
-                {i < steps.length - 1 && (
-                  <div className="hidden lg:block absolute top-10 left-[60%] w-[80%] h-[2px] bg-gradient-to-r from-[#06B6D4]/30 to-[#06B6D4]/10" />
-                )}
-
-                <div className="w-14 h-14 mx-auto rounded-full bg-gradient-to-br from-[#06B6D4] to-[#0891b2] text-white flex items-center justify-center text-lg font-bold shadow-lg shadow-[#06B6D4]/20 group-hover:scale-110 group-hover:shadow-xl group-hover:shadow-[#06B6D4]/30 transition-all duration-300 mb-4">
-                  {s.step}
-                </div>
-                <h3 className="text-base font-bold text-[#455a64] mb-1">{s.title}</h3>
-                <p className="text-xs text-[#90a4ae] max-w-[180px] mx-auto">{s.desc}</p>
-              </div>
-            ))}
-          </div>
-
-          <div className="text-center mt-10">
-            <button
-              onClick={() => setAuthModal("register")}
-              className="inline-flex items-center gap-2 px-7 py-3 text-sm font-bold text-white bg-gradient-to-r from-[#06B6D4] to-[#0891b2] rounded-xl shadow-lg shadow-[#06B6D4]/25 hover:shadow-xl hover:shadow-[#06B6D4]/30 hover:scale-[1.02] active:scale-[0.98] transition-all duration-300"
-            >
-              เริ่มใช้งานฟรี
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-              </svg>
-            </button>
-          </div>
-        </div>
-      </section>
 
       {/* ═══════ Footer ═══════ */}
       <footer id="contact" className="bg-[#0f2a38] text-white pt-14 pb-8">

@@ -312,7 +312,7 @@ export default function ShopDashboard() {
                     <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
                     <input
                         type="text"
-                        placeholder="ค้นหาออเดอร์, ลูกค้า..."
+                        placeholder="ค้นหา..."
                         className="w-full pl-11 pr-4 py-3 bg-white border border-[#e5e7eb] rounded-2xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#06B6D4]/30 focus:border-[#06B6D4] transition-all shadow-sm"
                     />
                 </div>
@@ -338,8 +338,8 @@ export default function ShopDashboard() {
                             <p className="text-sm font-semibold text-[#455a64]">Shop EasyPrint</p>
                             <p className="text-xs text-[#90a4ae]">{userName}</p>
                         </div>
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#06B6D4] to-[#0891b2] flex items-center justify-center text-white font-bold text-sm shadow-md shadow-[#06B6D4]/20">
-                            <User size={18} />
+                        <div className="w-10 h-10 rounded-full bg-[#06B6D4] flex items-center justify-center text-white font-bold text-sm shadow-md shadow-[#06B6D4]/20">
+                            <User size={20} />
                         </div>
                     </div>
                 </div>

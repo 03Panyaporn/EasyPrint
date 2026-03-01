@@ -236,29 +236,21 @@ export default function OrdersPage() {
     ]
 
     return (
-        <div className="p-8 pb-16">
+        <div className="p-8 pb-16 bg-[#F8FAFC] min-h-screen">
             {/* Header */}
             <div className="flex items-center justify-between mb-8">
-                <h1 className="text-3xl font-bold text-[#455a64]">รายการคำสั่งซื้อ</h1>
+                <div>
+                    <h1 className="text-3xl font-bold text-[#455a64]">รายการคำสั่งซื้อ</h1>
+                    <p className="text-[13px] text-gray-500 mt-1">จัดการคำสั่งซื้อของลูกค้า ทั้งหมด</p>
+                </div>
 
-                <div className="flex items-center gap-6">
-                    <div className="relative w-[300px]">
-                        <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                        <input
-                            type="text"
-                            placeholder="ค้นหา..."
-                            className="w-full pl-11 pr-4 py-2.5 bg-white border border-[#e5e7eb] rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-[#06B6D4]/30 shadow-sm transition-all"
-                        />
+                <div className="flex items-center gap-4 px-2 border-l border-[#e5e7eb] pl-6">
+                    <div className="text-right">
+                        <p className="text-sm font-semibold text-[#455a64]">Shop EasyPrint</p>
+                        <p className="text-xs text-[#90a4ae]">{userName}</p>
                     </div>
-
-                    <div className="flex items-center gap-3 pl-6 border-l border-[#e5e7eb]">
-                        <div className="text-right">
-                            <p className="text-sm font-semibold text-[#455a64]">Shop EasyPrint</p>
-                            <p className="text-xs text-[#90a4ae]">{userName}</p>
-                        </div>
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#06B6D4] to-[#0891b2] flex items-center justify-center text-white shadow-md">
-                            <User size={18} />
-                        </div>
+                    <div className="w-10 h-10 rounded-full bg-[#06B6D4] flex items-center justify-center text-white shadow-md">
+                        <User size={20} />
                     </div>
                 </div>
             </div>
@@ -660,8 +652,8 @@ export default function OrdersPage() {
                                     onClick={() => { window.print(); closeAllModals(); }}
                                     disabled={selectedOrder.status === "ตรวจสอบสลิป"}
                                     className={`flex-1 py-3.5 rounded-2xl text-sm font-bold transition-all flex items-center justify-center gap-2 shadow-lg ${selectedOrder.status === "ตรวจสอบสลิป"
-                                            ? "bg-gray-100 text-gray-400 cursor-not-allowed shadow-none"
-                                            : "bg-[#455a64] text-white hover:bg-[#37474f] shadow-gray-200"
+                                        ? "bg-gray-100 text-gray-400 cursor-not-allowed shadow-none"
+                                        : "bg-[#455a64] text-white hover:bg-[#37474f] shadow-gray-200"
                                         }`}
                                 >
                                     <Printer size={18} />
