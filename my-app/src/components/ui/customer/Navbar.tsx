@@ -1,9 +1,9 @@
 "use client"
-import { useState } from "react"
 import Link from "next/link"
+import { useCart } from "@/context/CartContext"
 
 export default function Navbar() {
-    const [cartCount] = useState(0); // TODO: เชื่อมกับ cart state จริงในอนาคต
+    const { cartCount } = useCart();
 
     const handleLogout = async () => {
         try {
@@ -87,16 +87,19 @@ export default function Navbar() {
                         </div>
                     </div>
 
-                    {/* ปุ่มตะกร้า */}
+                    {/* ปุ่มตะกร้า — เชื่อมกับ /customer/cart */}
                     <div className="relative group">
-                        <button className="w-10 h-10 rounded-2xl bg-[#E0F3F7] border border-[#06B6D4]/30 flex items-center justify-center text-[#06B6D4] shadow-sm cursor-pointer hover:bg-[#d1e9ed] transition-colors">
+                        <Link
+                            href="/customer/cart"
+                            className="w-10 h-10 rounded-2xl bg-[#E0F3F7] border border-[#06B6D4]/30 flex items-center justify-center text-[#06B6D4] shadow-sm cursor-pointer hover:bg-[#d1e9ed] transition-colors"
+                        >
                             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                 <circle cx="9" cy="21" r="1" /><circle cx="20" cy="21" r="1" />
                                 <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
                             </svg>
-                        </button>
+                        </Link>
                         {cartCount > 0 && (
-                            <span className="absolute -top-1.5 -right-1.5 min-w-[18px] min-h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center leading-none px-1 shadow-sm">
+                            <span className="absolute -top-1.5 -right-1.5 min-w-[18px] min-h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center leading-none px-1 shadow-sm pointer-events-none">
                                 {cartCount > 99 ? "99+" : cartCount}
                             </span>
                         )}
