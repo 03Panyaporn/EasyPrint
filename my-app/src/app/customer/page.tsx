@@ -59,18 +59,20 @@ export default function CustomerHome() {
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
                                         </svg>
                                     </div>
-                                    <p className="text-xl font-bold text-[#455a64]">EASY<span className="text-[#06B6D4]">PRINT</span></p>
-                                    <p className="text-[#78909c] text-sm mt-1">สะดวก รวดเร็ว ทุกที่ ทุกเวลา</p>
-
-                                    <div className="flex gap-4 mt-10 justify-center">
-                                        <div className="bg-white/80 backdrop-blur rounded-xl px-4 py-3 shadow-sm">
-                                            <p className="text-xl font-bold text-[#06B6D4]">500+</p>
-                                            <p className="text-xs text-[#90a4ae] font-medium">ลูกค้าใช้บริการ</p>
-                                        </div>
-                                        <div className="bg-white/80 backdrop-blur rounded-xl px-4 py-3 shadow-sm">
-                                            <p className="text-xl font-bold text-[#06B6D4]">99%</p>
-                                            <p className="text-xs text-[#90a4ae] font-medium">ความพึงพอใจ</p>
-                                        </div>
+                                    <p className="text-2xl font-bold text-[#455a64] leading-snug">
+                                        สะดวก <span className="text-[#06B6D4]">รวดเร็ว</span><br />ทุกที่ ทุกเวลา
+                                    </p>
+                                    <p className="text-[#90a4ae] text-xs mt-2 leading-relaxed">
+                                        บริการพิมพ์งานออนไลน์<br />ครบจบในที่เดียว
+                                    </p>
+                                    <div className="flex flex-col gap-2 mt-8 items-center">
+                                        <span className="inline-flex items-center gap-1.5 bg-white/80 backdrop-blur text-green-600 text-xs font-semibold px-3 py-1.5 rounded-full shadow-sm">
+                                            <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                                            พร้อมให้บริการ
+                                        </span>
+                                        <span className="inline-flex items-center gap-1.5 bg-white/80 backdrop-blur text-amber-500 text-xs font-semibold px-3 py-1.5 rounded-full shadow-sm">
+                                            ⚡ รวดเร็ว ทันใจ
+                                        </span>
                                     </div>
                                 </div>
                             </div>

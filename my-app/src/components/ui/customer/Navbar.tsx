@@ -73,20 +73,6 @@ export default function Navbar() {
                 {/* ไอคอนและปุ่มด้านขวา */}
                 <div className="flex items-center gap-3">
 
-                    {/* ปุ่มที่อยู่ */}
-                    <div className="relative group">
-                        <button className="w-10 h-10 rounded-2xl bg-[#E0F3F7] border border-[#06B6D4]/30 flex items-center justify-center text-[#06B6D4] shadow-sm cursor-pointer hover:bg-[#d1e9ed] transition-colors">
-                            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                                <circle cx="12" cy="10" r="3" />
-                            </svg>
-                        </button>
-                        <div className="absolute -bottom-9 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs rounded-lg px-2.5 py-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50 shadow-lg">
-                            ที่อยู่จัดส่ง
-                            <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-gray-800 rotate-45" />
-                        </div>
-                    </div>
-
                     {/* ปุ่มตะกร้า — เชื่อมกับ /customer/cart */}
                     <div className="relative group">
                         <Link
