@@ -94,6 +94,11 @@ const statusSequence = [
 export default function OrdersPage() {
     const [userName, setUserName] = useState("ร้านค้า")
     const [orders, setOrders] = useState(initialOrders)
+    const [filterStatus, setFilterStatus] = useState("ทั้งหมด")
+
+    const filteredOrders = filterStatus === "ทั้งหมด"
+        ? orders
+        : orders.filter(o => o.status === filterStatus)
 
     // Modal states
     const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false)
@@ -163,8 +168,6 @@ export default function OrdersPage() {
     const handleUpdateStatus = () => {
         if (!selectedOrder) return
         if (selectedOrder.status === "ตรวจสอบสลิป") return // Strict guard
-        if (selectedOrder.status === "ยกเลิก") return // Guard for cancelled orders
-
         const currentIndex = statusSequence.findIndex(s => s.label === selectedOrder.status)
         if (currentIndex < statusSequence.length - 1) {
             const nextStatus = statusSequence[currentIndex + 1]
@@ -174,6 +177,7 @@ export default function OrdersPage() {
                     : o
             )
             setOrders(updatedOrders)
+            setSelectedOrder({ ...selectedOrder, status: nextStatus.label, statusColor: nextStatus.color, progress: nextStatus.progress })
         }
         closeAllModals()
     }
@@ -184,15 +188,24 @@ export default function OrdersPage() {
         const nextStatus = statusSequence[1] // "กำลังดำเนินการ"
         const updatedOrders = orders.map(o =>
             o.id === selectedOrder.id
-                ? { ...o, status: nextStatus.label, statusColor: nextStatus.color, progress: nextStatus.progress }
+                ? { ...o, status: nextStatus.label, statusColor: nextStatus.color, progress: nextStatus.progress, progressBarColor: "bg-[#06B6D4]" }
                 : o
         )
         setOrders(updatedOrders)
+        setSelectedOrder({ ...selectedOrder, status: nextStatus.label, statusColor: nextStatus.color, progress: nextStatus.progress, progressBarColor: "bg-[#06B6D4]" })
         closeAllModals()
     }
 
     // Dynamic Stats Logic
     const stats = [
+        {
+            label: "ทั้งหมด",
+            value: orders.length.toString(),
+            unit: "ออเดอร์",
+            color: "bg-[#EEF2FF]",
+            textColor: "text-[#6366F1]",
+            countBg: "bg-[#E0E7FF]",
+        },
         {
             label: "ตรวจสอบสลิป",
             value: orders.filter(o => o.status === "ตรวจสอบสลิป").length.toString(),
@@ -213,17 +226,17 @@ export default function OrdersPage() {
             label: "เสร็จสิ้นพร้อมรับ",
             value: orders.filter(o => o.status === "เสร็จสิ้นพร้อมรับ").length.toString(),
             unit: "ออเดอร์",
-            color: "bg-[#E1F5FE]",
-            textColor: "text-[#0288D1]",
-            countBg: "bg-[#B3E5FC]",
+            color: "bg-[#E8F5E9]",
+            textColor: "text-[#4CAF50]",
+            countBg: "bg-[#C8E6C9]",
         },
         {
             label: "รับแล้ว",
             value: orders.filter(o => o.status === "รับแล้ว").length.toString(),
             unit: "ออเดอร์",
-            color: "bg-[#E8F5E9]",
-            textColor: "text-[#4CAF50]",
-            countBg: "bg-[#C8E6C9]",
+            color: "bg-[#F5F5F5]",
+            textColor: "text-[#9E9E9E]",
+            countBg: "bg-[#E0E0E0]",
         },
         {
             label: "ยกเลิก",
@@ -256,18 +269,31 @@ export default function OrdersPage() {
             </div>
 
             {/* Status Summary Cards */}
-            <div className="grid grid-cols-5 gap-4 mb-10">
+            <div className="grid grid-cols-6 gap-4 mb-10">
                 {stats.map((card) => (
-                    <div key={card.label} className="bg-white rounded-[24px] p-5 shadow-sm border border-[#f0f4f5] flex flex-col justify-between hover:shadow-md transition-shadow cursor-default group">
+                    <div
+                        key={card.label}
+                        onClick={() => setFilterStatus(card.label)}
+                        className={`rounded-[24px] p-5 shadow-sm border transition-all cursor-pointer group hover:-translate-y-1 ${filterStatus === card.label
+                            ? `${card.color} border-transparent ring-2 ring-offset-2 ring-transparent shadow-md`
+                            : 'bg-white border-[#f0f4f5] hover:shadow-md'
+                            }`}
+                    >
                         <div className="flex items-center justify-between mb-4">
-                            <span className="text-[13px] font-bold text-[#90a4ae]">{card.label}</span>
+                            <span className={`text-[13px] font-bold ${filterStatus === card.label ? card.textColor : 'text-[#90a4ae]'}`}>
+                                {card.label}
+                            </span>
                             <div className={`w-8 h-8 ${card.countBg} ${card.textColor} rounded-lg flex items-center justify-center text-sm font-bold shadow-sm group-hover:scale-110 transition-transform`}>
                                 {card.value}
                             </div>
                         </div>
                         <div className="flex items-baseline gap-2">
-                            <span className="text-3xl font-black text-[#455a64]">{card.value}</span>
-                            <span className="text-lg font-bold text-[#455a64]">{card.unit}</span>
+                            <span className={`text-3xl font-black ${filterStatus === card.label ? card.textColor : 'text-[#455a64]'}`}>
+                                {card.value}
+                            </span>
+                            <span className={`text-base font-bold ${filterStatus === card.label ? card.textColor : 'text-[#455a64]'}`}>
+                                {card.unit}
+                            </span>
                         </div>
                     </div>
                 ))}
@@ -319,82 +345,96 @@ export default function OrdersPage() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-[#f0f4f5]">
-                            {orders.map((order) => (
-                                <tr key={order.id} className="hover:bg-[#fafeff] transition-colors group">
-                                    <td className="px-8 py-6">
-                                        <div className="flex flex-col">
-                                            <span className="text-sm font-bold text-[#06B6D4] mb-0.5">{order.id}</span>
-                                            <span className="text-[11px] text-[#90a4ae]">{order.date}</span>
-                                        </div>
-                                    </td>
-                                    <td className="px-8 py-6">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-9 h-9 rounded-full bg-[#E0F7FA] flex items-center justify-center text-[#06B6D4] text-xs font-black shadow-sm group-hover:scale-105 transition-transform">
-                                                {order.customer.charAt(0)}
+                            {filteredOrders.length === 0 ? (
+                                <tr>
+                                    <td colSpan={5} className="px-8 py-20 text-center">
+                                        <div className="flex flex-col items-center gap-3">
+                                            <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center text-gray-300">
+                                                {/* Assuming ShoppingBag is imported or defined */}
+                                                {/* <ShoppingBag size={32} /> */}
+                                                <FileText size={32} /> {/* Using FileText as a placeholder */}
                                             </div>
-                                            <div className="flex flex-col">
-                                                <span className="text-sm text-[#455a64] font-bold leading-tight mb-1">{order.customer}</span>
-                                                <div className="flex items-center gap-1.5 group/file cursor-pointer">
-                                                    <Download size={12} className="text-[#90a4ae] group-hover/file:text-[#06B6D4] transition-colors" />
-                                                    <span className="text-[11px] text-[#90a4ae] group-hover/file:text-[#06B6D4] transition-colors">{order.fileName}</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td className="px-8 py-6">
-                                        <span className="text-sm font-black text-[#455a64]">฿{order.price}</span>
-                                    </td>
-                                    <td className="px-8 py-6">
-                                        <div className="flex flex-col w-[160px]">
-                                            <div className="mb-2">
-                                                <span className={`text-[10px] font-bold px-3 py-1 rounded-lg ${order.statusColor}`}>
-                                                    {order.status}
-                                                </span>
-                                            </div>
-                                            <div className="w-full h-1.5 bg-[#f0f4f5] rounded-full overflow-hidden">
-                                                <div
-                                                    className={`h-full ${order.progressBarColor} rounded-full transition-all duration-700`}
-                                                    style={{ width: `${order.progress}%` }}
-                                                />
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td className="px-8 py-6">
-                                        <div className="flex items-center justify-end gap-2.5">
-                                            <div className="flex items-center gap-1">
-                                                <button
-                                                    onClick={() => openDetailsModal(order)}
-                                                    className="p-2 text-[#90a4ae] hover:bg-emerald-100 hover:text-emerald-500 rounded-xl transition-all"
-                                                    title="รายละเอียดออเดอร์"
-                                                >
-                                                    <Eye size={16} />
-                                                </button>
-                                                <button
-                                                    onClick={() => openSlipModal(order)}
-                                                    className="p-2 text-[#90a4ae] hover:bg-amber-100 hover:text-amber-500 rounded-xl transition-all"
-                                                    title="สลิปโอนเงิน"
-                                                >
-                                                    <Receipt size={16} />
-                                                </button>
-                                                <button
-                                                    onClick={() => openPrintModal(order)}
-                                                    className="p-2 text-[#90a4ae] hover:bg-sky-100 hover:text-[#06B6D4] rounded-xl transition-all"
-                                                    title="พิมพ์"
-                                                >
-                                                    <Printer size={16} />
-                                                </button>
-                                            </div>
-                                            <button
-                                                onClick={() => openUpdateModal(order)}
-                                                className="flex items-center gap-2 px-4 py-2 bg-[#06B6D4] text-white rounded-xl text-xs font-bold hover:scale-105 hover:bg-[#0891b2] transition-all shadow-md shadow-[#06B6D4]/20"
-                                            >
-                                                อัปเดตสถานะ
-                                                <ChevronRight size={14} />
-                                            </button>
+                                            <p className="text-[#90a4ae] text-sm font-medium">ไม่พบรายการออเดอร์ในส่วนนี้</p>
                                         </div>
                                     </td>
                                 </tr>
-                            ))}
+                            ) : (
+                                filteredOrders.map((order) => (
+                                    <tr key={order.id} className="hover:bg-[#fafeff] transition-colors group">
+                                        <td className="px-8 py-6">
+                                            <div className="flex flex-col">
+                                                <span className="text-sm font-bold text-[#06B6D4] mb-0.5">{order.id}</span>
+                                                <span className="text-[11px] text-[#90a4ae]">{order.date}</span>
+                                            </div>
+                                        </td>
+                                        <td className="px-8 py-6">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-9 h-9 rounded-full bg-[#E0F7FA] flex items-center justify-center text-[#06B6D4] text-xs font-black shadow-sm group-hover:scale-105 transition-transform">
+                                                    {order.customer.charAt(0)}
+                                                </div>
+                                                <div className="flex flex-col">
+                                                    <span className="text-sm text-[#455a64] font-bold leading-tight mb-1">{order.customer}</span>
+                                                    <div className="flex items-center gap-1.5 group/file cursor-pointer">
+                                                        <Download size={12} className="text-[#90a4ae] group-hover/file:text-[#06B6D4] transition-colors" />
+                                                        <span className="text-[11px] text-[#90a4ae] group-hover/file:text-[#06B6D4] transition-colors">{order.fileName}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="px-8 py-6">
+                                            <span className="text-sm font-black text-[#455a64]">฿{order.price}</span>
+                                        </td>
+                                        <td className="px-8 py-6">
+                                            <div className="flex flex-col w-[160px]">
+                                                <div className="mb-2">
+                                                    <span className={`text-[10px] font-bold px-3 py-1 rounded-lg ${order.statusColor}`}>
+                                                        {order.status}
+                                                    </span>
+                                                </div>
+                                                <div className="w-full h-1.5 bg-[#f0f4f5] rounded-full overflow-hidden">
+                                                    <div
+                                                        className={`h-full ${order.progressBarColor} rounded-full transition-all duration-700`}
+                                                        style={{ width: `${order.progress}%` }}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="px-8 py-6">
+                                            <div className="flex items-center justify-end gap-2.5">
+                                                <div className="flex items-center gap-1">
+                                                    <button
+                                                        onClick={() => openDetailsModal(order)}
+                                                        className="p-2 text-[#90a4ae] hover:bg-emerald-100 hover:text-emerald-500 rounded-xl transition-all"
+                                                        title="รายละเอียดออเดอร์"
+                                                    >
+                                                        <Eye size={16} />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => openSlipModal(order)}
+                                                        className="p-2 text-[#90a4ae] hover:bg-amber-100 hover:text-amber-500 rounded-xl transition-all"
+                                                        title="สลิปโอนเงิน"
+                                                    >
+                                                        <Receipt size={16} />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => openPrintModal(order)}
+                                                        className="p-2 text-[#90a4ae] hover:bg-sky-100 hover:text-[#06B6D4] rounded-xl transition-all"
+                                                        title="พิมพ์"
+                                                    >
+                                                        <Printer size={16} />
+                                                    </button>
+                                                </div>
+                                                <button
+                                                    onClick={() => openUpdateModal(order)}
+                                                    className="flex items-center gap-2 px-4 py-2 bg-[#06B6D4] text-white rounded-xl text-xs font-bold hover:scale-105 hover:bg-[#0891b2] transition-all shadow-md shadow-[#06B6D4]/20"
+                                                >
+                                                    อัปเดตสถานะ
+                                                    <ChevronRight size={14} />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                )))}
                         </tbody>
                     </table>
                 </div>
@@ -445,7 +485,7 @@ export default function OrdersPage() {
                                 <div className="flex flex-col gap-4 relative z-10">
                                     <div className="flex items-start gap-4">
                                         <div className="w-7 h-7 rounded-full bg-white border-2 border-[#e5e7eb] flex items-center justify-center text-xs font-bold text-[#90a4ae] shadow-sm">
-                                            1
+                                            {Math.max(1, statusSequence.findIndex(s => s.label === selectedOrder.status) + 1)}
                                         </div>
                                         <div className="flex flex-col">
                                             <p className="text-xs font-medium text-[#90a4ae]">สถานะปัจจุบัน</p>
@@ -454,21 +494,25 @@ export default function OrdersPage() {
                                     </div>
 
                                     {/* Moving Slip Preview here, below Step 1 text */}
-                                    <div
-                                        onClick={() => openSlipModal(selectedOrder)}
-                                        className="ml-11 bg-gray-50 rounded-2xl p-4 border border-gray-100 flex items-center gap-4 group cursor-pointer hover:bg-gray-100 transition-all"
-                                    >
-                                        <div className="w-16 h-16 bg-white rounded-xl border border-gray-200 flex items-center justify-center text-gray-300 group-hover:scale-105 transition-transform overflow-hidden flex-shrink-0">
-                                            <Receipt size={24} />
+                                    {selectedOrder.status === "ตรวจสอบสลิป" && (
+                                        <div
+                                            onClick={() => openSlipModal(selectedOrder)}
+                                            className="ml-11 bg-[#FFF9C4] shadow-sm rounded-2xl p-4 border border-gray-100 flex items-center gap-4 group cursor-pointer hover:bg-gray-100 transition-all"
+                                        >
+                                            <div className="w-16 h-16 bg-white rounded-xl border border-gray-200 flex items-center justify-center text-gray-300 group-hover:scale-105 transition-transform overflow-hidden flex-shrink-0">
+                                                <Receipt size={24} />
+                                            </div>
+                                            <div className="flex flex-col">
+                                                <p className="text-[11px] font-bold text-[#90a4ae] uppercase tracking-wider mb-0.5">หลักฐานการโอนเงิน</p>
+                                                <p className="text-xs text-[#455a64] font-medium">รอการตรวจสอบสลิป...</p>
+                                            </div>
                                         </div>
-                                        <div className="flex flex-col">
-                                            <p className="text-[11px] font-bold text-[#90a4ae] uppercase tracking-wider mb-0.5">หลักฐานการโอนเงิน</p>
-                                            <p className="text-xs text-[#455a64] font-medium">รอการตรวจสอบสลิป...</p>
-                                        </div>
-                                    </div>
+                                    )}
                                 </div>
                                 <div className="flex items-start gap-4 relative z-10">
-                                    <div className="w-7 h-7 rounded-full bg-white border-2 border-[#06B6D4] flex items-center justify-center text-xs font-bold text-[#06B6D4] shadow-sm shadow-[#06B6D4]/10">2</div>
+                                    <div className="w-7 h-7 rounded-full bg-white border-2 border-[#06B6D4] flex items-center justify-center text-xs font-bold text-[#06B6D4] shadow-sm shadow-[#06B6D4]/10">
+                                        {Math.min(statusSequence.length + 1, Math.max(2, statusSequence.findIndex(s => s.label === selectedOrder.status) + 2))}
+                                    </div>
                                     <div className="flex flex-col">
                                         <p className="text-xs font-medium text-[#06B6D4]">สถานะถัดไป</p>
                                         <p className="text-sm font-bold text-[#455a64] mt-0.5">
@@ -497,7 +541,7 @@ export default function OrdersPage() {
                                     : "border-[#e5e7eb] text-rose-500 hover:bg-rose-50"}`}
                             >
                                 {selectedOrder.status === "ตรวจสอบสลิป" ? "สลิปไม่ถูกต้อง" :
-                                    selectedOrder.status === "ยกเลิก" ? "ถูกยกเลิกแล้ว" : "เริ่มงานแล้ว/ห้ามยกเลิก"}
+                                    selectedOrder.status === "ยกเลิก" ? "ถูกยกเลิกแล้ว" : "ยืนยันแล้วยกเลิกไม่ได้"}
                             </button>
                             <button
                                 onClick={selectedOrder.status === "ตรวจสอบสลิป" ? handleVerifySlip : handleUpdateStatus}
@@ -606,8 +650,26 @@ export default function OrdersPage() {
                                 <p className="text-sm font-medium text-gray-400 italic">รูปภาพสลิปโอนเงิน</p>
                             </div>
                             <div className="mt-6 flex gap-3">
-                                <button onClick={handleCancelOrder} className="flex-1 py-3.5 border border-[#e5e7eb] rounded-2xl text-rose-500 text-sm font-bold hover:bg-rose-50 transition-all">สลิปไม่ถูกต้อง</button>
-                                <button onClick={handleVerifySlip} className="flex-[2] py-3.5 bg-amber-500 text-white rounded-2xl text-sm font-bold hover:bg-amber-600 transition-all shadow-lg shadow-amber-500/20">ตรวจสอบเรียบร้อย</button>
+                                <button
+                                    onClick={handleCancelOrder}
+                                    disabled={selectedOrder.status !== "ตรวจสอบสลิป"}
+                                    className={`flex-1 py-3.5 border rounded-2xl text-sm font-bold transition-all ${selectedOrder.status !== "ตรวจสอบสลิป"
+                                        ? "bg-gray-50 border-gray-100 text-gray-300 cursor-not-allowed"
+                                        : "border-[#e5e7eb] text-rose-500 hover:bg-rose-50"
+                                        }`}
+                                >
+                                    สลิปไม่ถูกต้อง
+                                </button>
+                                <button
+                                    onClick={handleVerifySlip}
+                                    disabled={selectedOrder.status !== "ตรวจสอบสลิป"}
+                                    className={`flex-[2] py-3.5 rounded-2xl text-sm font-bold transition-all shadow-lg ${selectedOrder.status !== "ตรวจสอบสลิป"
+                                        ? "bg-gray-100 text-gray-400 cursor-not-allowed shadow-none"
+                                        : "bg-amber-500 text-white hover:bg-amber-600 shadow-amber-500/20"
+                                        }`}
+                                >
+                                    {selectedOrder.status === "ตรวจสอบสลิป" ? "ตรวจสอบเรียบร้อย" : "ตรวจสอบแล้ว"}
+                                </button>
                             </div>
                         </div>
                     </div>

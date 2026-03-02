@@ -379,8 +379,8 @@ export default function ShopDashboard() {
             <div className="bg-white rounded-2xl border border-[#eaf6f8] shadow-sm mb-8 overflow-hidden">
                 <div className="flex items-center justify-between px-6 py-5 border-b border-[#f0f4f5]">
                     <div>
-                        <h2 className="text-lg font-semibold text-[#455a64]">Orders Management</h2>
-                        <p className="text-xs text-[#90a4ae] mt-0.5">จัดการออเดอร์ล่าสุดของร้านค้า</p>
+                        <h2 className="text-xl font-bold text-[#455a64]">Orders Management</h2>
+                        <p className="text-xs text-[#90a4ae] mt-1">จัดการออเดอร์ล่าสุดของร้านค้า</p>
                     </div>
                     <Link href="/shop/orders">
                         <button className="flex items-center gap-2 px-4 py-2 border border-[#e5e7eb] rounded-xl text-sm text-[#78909c] hover:bg-[#f5fbfe] hover:border-[#06B6D4] hover:text-[#06B6D4] transition-all">
@@ -393,12 +393,12 @@ export default function ShopDashboard() {
                 <div className="overflow-x-auto">
                     <table className="w-full">
                         <thead>
-                            <tr className="bg-[#fafbfc] border-b border-[#f0f4f5]">
-                                <th className="text-left px-6 py-4 text-xs font-semibold text-[#90a4ae] uppercase tracking-wider">เลขที่ออเดอร์</th>
-                                <th className="text-left px-6 py-4 text-xs font-semibold text-[#90a4ae] uppercase tracking-wider">ลูกค้า/ไฟล์งาน</th>
-                                <th className="text-left px-6 py-4 text-xs font-semibold text-[#90a4ae] uppercase tracking-wider">ยอดรวม</th>
-                                <th className="text-left px-6 py-4 text-xs font-semibold text-[#90a4ae] uppercase tracking-wider">สถานะการผลิต</th>
-                                <th className="text-right px-6 py-4 text-xs font-semibold text-[#90a4ae] uppercase tracking-wider">การจัดการ</th>
+                            <tr className="border-b border-[#f0f4f5]">
+                                <th className="text-left px-8 py-5 text-[11px] font-bold text-[#90a4ae] uppercase tracking-wider">เลขที่ออเดอร์</th>
+                                <th className="text-left px-8 py-5 text-[11px] font-bold text-[#90a4ae] uppercase tracking-wider">ลูกค้า/ไฟล์งาน</th>
+                                <th className="text-left px-8 py-5 text-[11px] font-bold text-[#90a4ae] uppercase tracking-wider">ยอดรวม</th>
+                                <th className="text-left px-8 py-5 text-[11px] font-bold text-[#90a4ae] uppercase tracking-wider">สถานะการผลิต</th>
+                                <th className="text-right px-8 py-5 text-[11px] font-bold text-[#90a4ae] uppercase tracking-wider">การจัดการ</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-[#f0f4f5]">
@@ -407,60 +407,60 @@ export default function ShopDashboard() {
                                     key={order.id}
                                     className="hover:bg-[#fafeff] transition-colors duration-150 group"
                                 >
-                                    <td className="px-6 py-5">
+                                    <td className="px-8 py-6">
                                         <div className="flex flex-col">
-                                            <span className="text-sm font-bold text-[#06B6D4]">{order.id}</span>
-                                            <span className="text-[11px] text-[#90a4ae] mt-0.5">{order.date}</span>
+                                            <span className="text-sm font-bold text-[#06B6D4] mb-0.5">{order.id}</span>
+                                            <span className="text-[11px] text-[#90a4ae]">{order.date}</span>
                                         </div>
                                     </td>
-                                    <td className="px-6 py-5">
+                                    <td className="px-8 py-6">
                                         <div className="flex items-center gap-3">
-                                            <div className="w-9 h-9 rounded-full bg-[#E0F7FA] flex items-center justify-center text-[#06B6D4] text-sm font-bold shadow-sm">
+                                            <div className="w-9 h-9 rounded-full bg-[#E0F7FA] flex items-center justify-center text-[#06B6D4] text-xs font-black shadow-sm group-hover:scale-105 transition-transform">
                                                 {order.customer.charAt(0)}
                                             </div>
                                             <div className="flex flex-col">
-                                                <span className="text-sm text-[#455a64] font-bold">{order.customer}</span>
-                                                <div className="flex items-center gap-1 mt-0.5">
-                                                    <Download size={12} className="text-[#90a4ae]" />
-                                                    <span className="text-xs text-[#90a4ae] truncate max-w-[150px]">{order.fileName}</span>
+                                                <span className="text-sm text-[#455a64] font-bold leading-tight mb-1">{order.customer}</span>
+                                                <div className="flex items-center gap-1.5 group/file cursor-pointer">
+                                                    <Download size={12} className="text-[#90a4ae] group-hover/file:text-[#06B6D4] transition-colors" />
+                                                    <span className="text-[11px] text-[#90a4ae] group-hover/file:text-[#06B6D4] transition-colors truncate max-w-[150px]">{order.fileName}</span>
                                                 </div>
                                             </div>
                                         </div>
                                     </td>
-                                    <td className="px-6 py-5">
-                                        <span className="text-sm font-bold text-[#455a64]">฿{order.price}</span>
+                                    <td className="px-8 py-6">
+                                        <span className="text-sm font-black text-[#455a64]">฿{order.price}</span>
                                     </td>
-                                    <td className="px-6 py-5">
-                                        <div className="flex flex-col w-[180px]">
-                                            <div className="flex items-center mb-2">
-                                                <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${order.statusColor}`}>
+                                    <td className="px-8 py-6">
+                                        <div className="flex flex-col w-[160px]">
+                                            <div className="mb-2">
+                                                <span className={`text-[10px] font-bold px-3 py-1 rounded-lg ${order.statusColor}`}>
                                                     {order.status}
                                                 </span>
                                             </div>
                                             <div className="w-full h-1.5 bg-[#f0f4f5] rounded-full overflow-hidden">
                                                 <div
-                                                    className={`h-full ${order.progressBarColor} rounded-full transition-all duration-500`}
+                                                    className={`h-full ${order.progressBarColor} rounded-full transition-all duration-700`}
                                                     style={{ width: `${order.progress}%` }}
                                                 />
                                             </div>
                                         </div>
                                     </td>
-                                    <td className="px-6 py-5">
-                                        <div className="flex items-center justify-end gap-2">
-                                            <div className="flex items-center gap-1 mr-2">
-                                                <button onClick={() => openDetailsModal(order)} className="p-2 text-[#90a4ae] hover:bg-emerald-100 hover:text-emerald-500 rounded-lg transition-all" title="รายละเอียดออเดอร์">
+                                    <td className="px-8 py-6">
+                                        <div className="flex items-center justify-end gap-2.5">
+                                            <div className="flex items-center gap-1">
+                                                <button onClick={() => openDetailsModal(order)} className="p-2 text-[#90a4ae] hover:bg-emerald-100 hover:text-emerald-500 rounded-xl transition-all" title="รายละเอียดออเดอร์">
                                                     <Eye size={16} />
                                                 </button>
-                                                <button onClick={() => openSlipModal(order)} className="p-2 text-[#90a4ae] hover:bg-amber-100 hover:text-amber-500 rounded-lg transition-all" title="สลิปโอนเงิน">
+                                                <button onClick={() => openSlipModal(order)} className="p-2 text-[#90a4ae] hover:bg-amber-100 hover:text-amber-500 rounded-xl transition-all" title="สลิปโอนเงิน">
                                                     <Receipt size={16} />
                                                 </button>
-                                                <button onClick={() => openPrintModal(order)} className="p-2 text-[#90a4ae] hover:bg-sky-100 hover:text-[#06B6D4] rounded-lg transition-all" title="พิมพ์">
+                                                <button onClick={() => openPrintModal(order)} className="p-2 text-[#90a4ae] hover:bg-sky-100 hover:text-[#06B6D4] rounded-xl transition-all" title="พิมพ์">
                                                     <Printer size={16} />
                                                 </button>
                                             </div>
                                             <button
                                                 onClick={() => openUpdateModal(order)}
-                                                className="flex items-center gap-1.5 px-3 py-2 bg-[#06B6D4] text-white rounded-[10px] text-xs font-bold hover:bg-[#0891b2] transition-all shadow-sm shadow-[#06B6D4]/20"
+                                                className="flex items-center gap-2 px-4 py-2 bg-[#06B6D4] text-white rounded-xl text-xs font-bold hover:scale-105 hover:bg-[#0891b2] transition-all shadow-md shadow-[#06B6D4]/20"
                                             >
                                                 อัปเดตสถานะ
                                                 <ChevronRight size={14} />
@@ -505,31 +505,33 @@ export default function ShopDashboard() {
                                     <div className="flex flex-col gap-4 relative z-10">
                                         <div className="flex items-start gap-4">
                                             <div className="w-7 h-7 rounded-full bg-white border-2 border-[#e5e7eb] flex items-center justify-center text-xs font-bold text-[#90a4ae] shadow-sm">
-                                                1
+                                                {Math.max(1, statusSequence.findIndex(s => s.label === selectedOrder.status) + 1)}
                                             </div>
                                             <div className="flex flex-col">
                                                 <p className="text-xs font-medium text-[#90a4ae]">สถานะปัจจุบัน</p>
                                                 <p className="text-sm font-bold text-[#455a64] mt-0.5">{selectedOrder.status}</p>
                                             </div>
                                         </div>
-                                        <div
-                                            onClick={() => openSlipModal(selectedOrder)}
-                                            className="ml-11 bg-gray-100 rounded-2xl p-4 border border-gray-200 flex items-center gap-4 shadow-lg cursor-pointer transition-all hover:bg-gray-50 hover:border-gray-200 hover:shadow-md hover:-translate-y-0.5"
-                                        >
-                                            <div className="w-16 h-16 bg-white rounded-xl border border-gray-200 flex items-center justify-center text-gray-300 group-hover:scale-105 transition-transform overflow-hidden flex-shrink-0">
-                                                <Receipt size={24} />
+                                        {selectedOrder.status === "ตรวจสอบสลิป" && (
+                                            <div
+                                                onClick={() => openSlipModal(selectedOrder)}
+                                                className="ml-11 bg-gray-50 rounded-2xl p-4 border border-gray-100 flex items-center gap-4 group cursor-pointer hover:bg-gray-100 transition-all"
+                                            >
+                                                <div className="w-16 h-16 bg-white rounded-xl border border-gray-200 flex items-center justify-center text-gray-300 group-hover:scale-105 transition-transform overflow-hidden flex-shrink-0">
+                                                    <Receipt size={24} />
+                                                </div>
+                                                <div className="flex flex-col">
+                                                    <p className="text-[11px] font-bold text-[#90a4ae] uppercase tracking-wider mb-0.5">หลักฐานการโอนเงิน</p>
+                                                    <p className="text-xs text-[#455a64] font-medium">รอการตรวจสอบสลิป...</p>
+                                                </div>
                                             </div>
-                                            <div className="flex flex-col">
-                                                <p className="text-[11px] font-bold text-[#90a4ae] uppercase tracking-wider mb-0.5">หลักฐานการโอนเงิน</p>
-                                                <p className="text-xs text-[#455a64] font-medium">รอการตรวจสอบสลิป...</p>
-                                            </div>
-                                        </div>
+                                        )}
                                     </div>
 
                                     {/* Step 2: Next Status */}
                                     <div className="flex items-start gap-4 relative z-10">
                                         <div className="w-7 h-7 rounded-full bg-white border-2 border-[#06B6D4] flex items-center justify-center text-xs font-bold text-[#06B6D4] shadow-sm shadow-[#06B6D4]/10">
-                                            2
+                                            {Math.min(statusSequence.length + 1, Math.max(2, statusSequence.findIndex(s => s.label === selectedOrder.status) + 2))}
                                         </div>
                                         <div className="flex flex-col">
                                             <p className="text-xs font-medium text-[#06B6D4]">สถานะถัดไป</p>
@@ -561,7 +563,7 @@ export default function ShopDashboard() {
                                         : "border-[#e5e7eb] text-rose-500 hover:bg-rose-50"}`}
                                 >
                                     {selectedOrder.status === "ตรวจสอบสลิป" ? "สลิปไม่ถูกต้อง" :
-                                        selectedOrder.status === "ยกเลิก" ? "ถูกยกเลิกแล้ว" : "เริ่มงานแล้ว/ห้ามยกเลิก"}
+                                        selectedOrder.status === "ยกเลิก" ? "ถูกยกเลิกแล้ว" : "ยืนยันแล้วยกเลิกไม่ได้"}
                                 </button>
                                 <button
                                     onClick={selectedOrder.status === "ตรวจสอบสลิป" ? handleVerifySlip : handleUpdateStatus}
@@ -670,8 +672,26 @@ export default function ShopDashboard() {
                                     <p className="text-sm font-medium text-gray-400 italic">รูปภาพสลิปโอนเงิน</p>
                                 </div>
                                 <div className="mt-6 flex gap-3">
-                                    <button onClick={handleCancelOrder} className="flex-1 py-3.5 border border-[#e5e7eb] rounded-2xl text-rose-500 text-sm font-bold hover:bg-rose-50 transition-all">สลิปไม่ถูกต้อง</button>
-                                    <button onClick={handleVerifySlip} className="flex-1 py-3.5 bg-amber-500 text-white rounded-2xl text-sm font-bold hover:bg-amber-600 transition-all shadow-lg shadow-amber-500/20">ตรวจสอบเรียบร้อย</button>
+                                    <button
+                                        onClick={handleCancelOrder}
+                                        disabled={selectedOrder.status !== "ตรวจสอบสลิป"}
+                                        className={`flex-1 py-3.5 border rounded-2xl text-sm font-bold transition-all ${selectedOrder.status !== "ตรวจสอบสลิป"
+                                            ? "bg-gray-50 border-gray-100 text-gray-300 cursor-not-allowed"
+                                            : "border-[#e5e7eb] text-rose-500 hover:bg-rose-50"
+                                            }`}
+                                    >
+                                        สลิปไม่ถูกต้อง
+                                    </button>
+                                    <button
+                                        onClick={handleVerifySlip}
+                                        disabled={selectedOrder.status !== "ตรวจสอบสลิป"}
+                                        className={`flex-[2] py-3.5 rounded-2xl text-sm font-bold transition-all shadow-lg ${selectedOrder.status !== "ตรวจสอบสลิป"
+                                            ? "bg-gray-100 text-gray-400 cursor-not-allowed shadow-none"
+                                            : "bg-amber-500 text-white hover:bg-amber-600 shadow-amber-500/20"
+                                            }`}
+                                    >
+                                        {selectedOrder.status === "ตรวจสอบสลิป" ? "ตรวจสอบเรียบร้อย" : "ตรวจสอบแล้ว"}
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -764,7 +784,7 @@ export default function ShopDashboard() {
                 {/* Footer and Pagination */}
                 <div className="px-6 py-5 border-t border-[#f0f4f5] flex items-center justify-between">
                     <p className="text-xs text-[#90a4ae]">
-                        การเปลี่ยนสถานะจะแจ้งเตือนลูกค้าโดยอัตโนมัติผ่านทางหน้าเว็บและอีเมล
+                        การเปลี่ยนสถานะจะแจ้งเตือนลูกค้าโดยอัตโนมัติผ่านทางหน้าเว็บ
                     </p>
                     <div className="flex items-center gap-2">
                         <button className="px-4 py-2 bg-[#f8fafc] border border-[#e5e7eb] rounded-xl text-xs font-medium text-[#90a4ae] hover:bg-[#06B6D4] hover:text-white hover:border-[#06B6D4] transition-all disabled:opacity-50">
