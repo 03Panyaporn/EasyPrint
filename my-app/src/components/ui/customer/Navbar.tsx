@@ -1,9 +1,11 @@
 "use client"
+import { useState } from "react"
 import Link from "next/link"
 import { useCart } from "@/context/CartContext"
 
 export default function Navbar() {
     const { cartCount } = useCart();
+    const [showLogoutModal, setShowLogoutModal] = useState(false)
 
     const handleLogout = async () => {
         try {

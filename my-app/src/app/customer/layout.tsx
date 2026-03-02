@@ -1,6 +1,14 @@
+import type { Metadata } from "next"
 import Navbar from "@/components/ui/customer/Navbar"
 import Footer from "@/components/ui/customer/Footer"
 import { CartProvider } from "@/context/CartContext"
+
+export const metadata: Metadata = {
+    title: {
+        default: "หน้าแรก",
+        template: "%s | EasyPrint",
+    },
+}
 
 export default function CustomerLayout({
     children,

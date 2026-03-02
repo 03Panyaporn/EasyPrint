@@ -1,4 +1,12 @@
+import type { Metadata } from "next"
 import Sidebar from "@/components/ui/shop/Sidebar"
+
+export const metadata: Metadata = {
+    title: {
+        default: "แดชบอร์ดร้านค้า",
+        template: "%s | EasyPrint",
+    },
+}
 
 export default function ShopLayout({
     children,

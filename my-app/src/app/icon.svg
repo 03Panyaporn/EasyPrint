@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <!-- Background rounded square -->
+  <rect width="100" height="100" rx="22" fill="#06B6D4"/>
+  <!-- Printer icon (white) -->
+  <!-- Paper output tray (bottom paper) -->
+  <rect x="32" y="62" width="36" height="22" rx="3" fill="white"/>
+  <!-- Printer body -->
+  <rect x="20" y="40" width="60" height="30" rx="5" fill="white"/>
+  <!-- Printer top paper input -->
+  <rect x="32" y="18" width="36" height="24" rx="3" fill="white"/>
+  <!-- Ink dot / button on printer body -->
+  <circle cx="72" cy="55" r="4" fill="#06B6D4"/>
+  <!-- Paper slot line on body -->
+  <rect x="30" y="68" width="40" height="3" rx="1.5" fill="#06B6D4"/>
+</svg>
