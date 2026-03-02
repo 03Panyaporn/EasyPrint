@@ -1,11 +1,11 @@
-"use client"
+﻿"use client"
 
 import { useState } from "react"
 import Link from "next/link"
 
-// ─────────────────────────────────────────────
+// ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 // Auth Modal Component
-// ─────────────────────────────────────────────
+// ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 function AuthModal({
   mode,
   onClose,
@@ -37,7 +37,7 @@ function AuthModal({
       const data = await res.json()
 
       if (!res.ok) {
-        setError(data.error || "เข้าสู่ระบบไม่สำเร็จ")
+        setError(data.error || "α╣Çα╕éα╣ëα╕▓α╕¬α╕╣α╣êα╕úα╕░α╕Üα╕Üα╣äα╕íα╣êα╕¬α╕│α╣Çα╕úα╣çα╕ê")
         return
       }
 
@@ -48,7 +48,7 @@ function AuthModal({
 
       window.location.href = "/customer"
     } catch {
-      setError("ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้")
+      setError("α╣äα╕íα╣êα╕¬α╕▓α╕íα╕▓α╕úα╕ûα╣Çα╕èα╕╖α╣êα╕¡α╕íα╕òα╣êα╕¡α╕üα╕▒α╕Üα╣Çα╕ïα╕┤α╕úα╣îα╕ƒα╣Çα╕ºα╕¡α╕úα╣îα╣äα╕öα╣ë")
     } finally {
       setLoading(false)
     }
@@ -61,12 +61,12 @@ function AuthModal({
     setLoading(true)
 
     if (password !== confirmPassword) {
-      setError("รหัสผ่านไม่ตรงกัน")
+      setError("α╕úα╕½α╕▒α╕¬α╕£α╣êα╕▓α╕Öα╣äα╕íα╣êα╕òα╕úα╕çα╕üα╕▒α╕Ö")
       setLoading(false)
       return
     }
     if (password.length < 6) {
-      setError("รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร")
+      setError("α╕úα╕½α╕▒α╕¬α╕£α╣êα╕▓α╕Öα╕òα╣ëα╕¡α╕çα╕íα╕╡α╕¡α╕óα╣êα╕▓α╕çα╕Öα╣ëα╕¡α╕ó 6 α╕òα╕▒α╕ºα╕¡α╕▒α╕üα╕⌐α╕ú")
       setLoading(false)
       return
     }
@@ -80,17 +80,17 @@ function AuthModal({
       const data = await res.json()
 
       if (!res.ok) {
-        setError(data.error || "สมัครสมาชิกไม่สำเร็จ")
+        setError(data.error || "α╕¬α╕íα╕▒α╕äα╕úα╕¬α╕íα╕▓α╕èα╕┤α╕üα╣äα╕íα╣êα╕¬α╕│α╣Çα╕úα╣çα╕ê")
         return
       }
 
-      setSuccess("สมัครสมาชิกสำเร็จ! กรุณาเช็คอีเมลเพื่อยืนยันบัญชี")
+      setSuccess("α╕¬α╕íα╕▒α╕äα╕úα╕¬α╕íα╕▓α╕èα╕┤α╕üα╕¬α╕│α╣Çα╕úα╣çα╕ê! α╕üα╕úα╕╕α╕ôα╕▓α╣Çα╕èα╣çα╕äα╕¡α╕╡α╣Çα╕íα╕Ñα╣Çα╕₧α╕╖α╣êα╕¡α╕óα╕╖α╕Öα╕óα╕▒α╕Öα╕Üα╕▒α╕ìα╕èα╕╡")
       setName("")
       setEmail("")
       setPassword("")
       setConfirmPassword("")
     } catch {
-      setError("ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้")
+      setError("α╣äα╕íα╣êα╕¬α╕▓α╕íα╕▓α╕úα╕ûα╣Çα╕èα╕╖α╣êα╕¡α╕íα╕òα╣êα╕¡α╕üα╕▒α╕Üα╣Çα╕ïα╕┤α╕úα╣îα╕ƒα╣Çα╕ºα╕¡α╕úα╣îα╣äα╕öα╣ë")
     } finally {
       setLoading(false)
     }
@@ -130,7 +130,7 @@ function AuthModal({
             </span>
           </div>
           <h2 className="text-xl font-semibold text-gray-800">
-            {mode === "login" ? "เข้าสู่ระบบ" : "สมัครสมาชิก"}
+            {mode === "login" ? "α╣Çα╕éα╣ëα╕▓α╕¬α╕╣α╣êα╕úα╕░α╕Üα╕Ü" : "α╕¬α╕íα╕▒α╕äα╕úα╕¬α╕íα╕▓α╕èα╕┤α╕ü"}
           </h2>
         </div>
 
@@ -159,7 +159,7 @@ function AuthModal({
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="ชื่อผู้ใช้"
+                placeholder="α╕èα╕╖α╣êα╕¡α╕£α╕╣α╣ëα╣âα╕èα╣ë"
                 required
                 className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500/30 focus:border-cyan-500 transition-all text-sm"
               />
@@ -188,7 +188,7 @@ function AuthModal({
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••"
+              placeholder="ΓÇóΓÇóΓÇóΓÇóΓÇóΓÇó"
               required
               minLength={6}
               className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500/30 focus:border-cyan-500 transition-all text-sm"
@@ -204,7 +204,7 @@ function AuthModal({
                 type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="••••••"
+                placeholder="ΓÇóΓÇóΓÇóΓÇóΓÇóΓÇó"
                 required
                 className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500/30 focus:border-cyan-500 transition-all text-sm"
               />
@@ -214,7 +214,7 @@ function AuthModal({
           {mode === "login" && (
             <div className="text-right">
               <a href="#" className="text-xs text-cyan-500 hover:text-cyan-600 transition-colors">
-                ลืมรหัสผ่าน?
+                α╕Ñα╕╖α╕íα╕úα╕½α╕▒α╕¬α╕£α╣êα╕▓α╕Ö?
               </a>
             </div>
           )}
@@ -226,22 +226,22 @@ function AuthModal({
           >
             {loading
               ? mode === "login"
-                ? "กำลังเข้าสู่ระบบ..."
-                : "กำลังสมัคร..."
+                ? "α╕üα╕│α╕Ñα╕▒α╕çα╣Çα╕éα╣ëα╕▓α╕¬α╕╣α╣êα╕úα╕░α╕Üα╕Ü..."
+                : "α╕üα╕│α╕Ñα╕▒α╕çα╕¬α╕íα╕▒α╕äα╕ú..."
               : mode === "login"
-                ? "เข้าสู่ระบบ"
-                : "สมัครสมาชิก"}
+                ? "α╣Çα╕éα╣ëα╕▓α╕¬α╕╣α╣êα╕úα╕░α╕Üα╕Ü"
+                : "α╕¬α╕íα╕▒α╕äα╕úα╕¬α╕íα╕▓α╕èα╕┤α╕ü"}
           </button>
         </form>
 
         {/* Switch Mode */}
         <p className="text-center text-gray-500 text-xs mt-5">
-          {mode === "login" ? "ยังไม่มีบัญชี?" : "มีบัญชีอยู่แล้ว?"}{" "}
+          {mode === "login" ? "α╕óα╕▒α╕çα╣äα╕íα╣êα╕íα╕╡α╕Üα╕▒α╕ìα╕èα╕╡?" : "α╕íα╕╡α╕Üα╕▒α╕ìα╕èα╕╡α╕¡α╕óα╕╣α╣êα╣üα╕Ñα╣ëα╕º?"}{" "}
           <button
             onClick={onSwitchMode}
             className="text-cyan-500 hover:text-cyan-600 font-medium transition-colors"
           >
-            {mode === "login" ? "สมัครสมาชิก" : "เข้าสู่ระบบ"}
+            {mode === "login" ? "α╕¬α╕íα╕▒α╕äα╕úα╕¬α╕íα╕▓α╕èα╕┤α╕ü" : "α╣Çα╕éα╣ëα╕▓α╕¬α╕╣α╣êα╕úα╕░α╕Üα╕Ü"}
           </button>
         </p>
       </div>
@@ -261,11 +261,9 @@ function AuthModal({
   )
 }
 
-
-
-// ─────────────────────────────────────────────
+// ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 // Feature Card Data
-// ─────────────────────────────────────────────
+// ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 const features = [
   {
     icon: (
@@ -273,8 +271,8 @@ const features = [
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
       </svg>
     ),
-    title: "สั่งพิมพ์ออนไลน์",
-    desc: "อัปโหลดไฟล์ เลือกตัวเลือกการพิมพ์ สั่งพิมพ์ได้ทันทีจากทุกที่",
+    title: "α╕¬α╕▒α╣êα╕çα╕₧α╕┤α╕íα╕₧α╣îα╕¡α╕¡α╕Öα╣äα╕Ñα╕Öα╣î",
+    desc: "α╕¡α╕▒α╕¢α╣éα╕½α╕Ñα╕öα╣äα╕ƒα╕Ñα╣î α╣Çα╕Ñα╕╖α╕¡α╕üα╕òα╕▒α╕ºα╣Çα╕Ñα╕╖α╕¡α╕üα╕üα╕▓α╕úα╕₧α╕┤α╕íα╕₧α╣î α╕¬α╕▒α╣êα╕çα╕₧α╕┤α╕íα╕₧α╣îα╣äα╕öα╣ëα╕ùα╕▒α╕Öα╕ùα╕╡α╕êα╕▓α╕üα╕ùα╕╕α╕üα╕ùα╕╡α╣ê",
   },
   {
     icon: (
@@ -282,8 +280,8 @@ const features = [
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
       </svg>
     ),
-    title: "คำนวณราคาอัตโนมัติ",
-    desc: "คิดราคาแม่นยำโปร่งใส ดูราคาก่อนยืนยันสั่ง ไม่มีค่าใช้จ่ายซ่อน",
+    title: "α╕äα╕│α╕Öα╕ºα╕ôα╕úα╕▓α╕äα╕▓α╕¡α╕▒α╕òα╣éα╕Öα╕íα╕▒α╕òα╕┤",
+    desc: "α╕äα╕┤α╕öα╕úα╕▓α╕äα╕▓α╣üα╕íα╣êα╕Öα╕óα╕│α╣éα╕¢α╕úα╣êα╕çα╣âα╕¬ α╕öα╕╣α╕úα╕▓α╕äα╕▓α╕üα╣êα╕¡α╕Öα╕óα╕╖α╕Öα╕óα╕▒α╕Öα╕¬α╕▒α╣êα╕ç α╣äα╕íα╣êα╕íα╕╡α╕äα╣êα╕▓α╣âα╕èα╣ëα╕êα╣êα╕▓α╕óα╕ïα╣êα╕¡α╕Ö",
   },
   {
     icon: (
@@ -291,8 +289,8 @@ const features = [
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
       </svg>
     ),
-    title: "แจ้งเตือนสถานะ",
-    desc: "ติดตามงานพิมพ์ได้แบบเรียลไทม์ รู้ทันทุกขั้นตอนจนถึงมือ",
+    title: "α╣üα╕êα╣ëα╕çα╣Çα╕òα╕╖α╕¡α╕Öα╕¬α╕ûα╕▓α╕Öα╕░",
+    desc: "α╕òα╕┤α╕öα╕òα╕▓α╕íα╕çα╕▓α╕Öα╕₧α╕┤α╕íα╕₧α╣îα╣äα╕öα╣ëα╣üα╕Üα╕Üα╣Çα╕úα╕╡α╕óα╕Ñα╣äα╕ùα╕íα╣î α╕úα╕╣α╣ëα╕ùα╕▒α╕Öα╕ùα╕╕α╕üα╕éα╕▒α╣ëα╕Öα╕òα╕¡α╕Öα╕êα╕Öα╕ûα╕╢α╕çα╕íα╕╖α╕¡",
   },
   {
     icon: (
@@ -300,27 +298,27 @@ const features = [
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
       </svg>
     ),
-    title: "แชทกับร้านค้า",
-    desc: "สอบถามรายละเอียด พูดคุยกับร้านค้าได้โดยตรงผ่านระบบแชท",
+    title: "α╣üα╕èα╕ùα╕üα╕▒α╕Üα╕úα╣ëα╕▓α╕Öα╕äα╣ëα╕▓",
+    desc: "α╕¬α╕¡α╕Üα╕ûα╕▓α╕íα╕úα╕▓α╕óα╕Ñα╕░α╣Çα╕¡α╕╡α╕óα╕ö α╕₧α╕╣α╕öα╕äα╕╕α╕óα╕üα╕▒α╕Üα╕úα╣ëα╕▓α╕Öα╕äα╣ëα╕▓α╣äα╕öα╣ëα╣éα╕öα╕óα╕òα╕úα╕çα╕£α╣êα╕▓α╕Öα╕úα╕░α╕Üα╕Üα╣üα╕èα╕ù",
   },
 ]
 
 const steps = [
-  { step: "01", title: "สมัครสมาชิก", desc: "สร้างบัญชีฟรีภายในไม่กี่วินาที" },
-  { step: "02", title: "อัปโหลดไฟล์", desc: "เลือกไฟล์ที่ต้องการพิมพ์ (PDF, DOC, รูปภาพ)" },
-  { step: "03", title: "เลือกตัวเลือก", desc: "กำหนดขนาด ประเภท จำนวน และตัวเลือกเพิ่มเติม" },
-  { step: "04", title: "รับงานพิมพ์", desc: "ติดตามสถานะและรับงานพิมพ์ตามที่ต้องการ" },
+  { step: "01", title: "α╕¬α╕íα╕▒α╕äα╕úα╕¬α╕íα╕▓α╕èα╕┤α╕ü", desc: "α╕¬α╕úα╣ëα╕▓α╕çα╕Üα╕▒α╕ìα╕èα╕╡α╕ƒα╕úα╕╡α╕áα╕▓α╕óα╣âα╕Öα╣äα╕íα╣êα╕üα╕╡α╣êα╕ºα╕┤α╕Öα╕▓α╕ùα╕╡" },
+  { step: "02", title: "α╕¡α╕▒α╕¢α╣éα╕½α╕Ñα╕öα╣äα╕ƒα╕Ñα╣î", desc: "α╣Çα╕Ñα╕╖α╕¡α╕üα╣äα╕ƒα╕Ñα╣îα╕ùα╕╡α╣êα╕òα╣ëα╕¡α╕çα╕üα╕▓α╕úα╕₧α╕┤α╕íα╕₧α╣î (PDF, DOC, α╕úα╕╣α╕¢α╕áα╕▓α╕₧)" },
+  { step: "03", title: "α╣Çα╕Ñα╕╖α╕¡α╕üα╕òα╕▒α╕ºα╣Çα╕Ñα╕╖α╕¡α╕ü", desc: "α╕üα╕│α╕½α╕Öα╕öα╕éα╕Öα╕▓α╕ö α╕¢α╕úα╕░α╣Çα╕áα╕ù α╕êα╕│α╕Öα╕ºα╕Ö α╣üα╕Ñα╕░α╕òα╕▒α╕ºα╣Çα╕Ñα╕╖α╕¡α╕üα╣Çα╕₧α╕┤α╣êα╕íα╣Çα╕òα╕┤α╕í" },
+  { step: "04", title: "α╕úα╕▒α╕Üα╕çα╕▓α╕Öα╕₧α╕┤α╕íα╕₧α╣î", desc: "α╕òα╕┤α╕öα╕òα╕▓α╕íα╕¬α╕ûα╕▓α╕Öα╕░α╣üα╕Ñα╕░α╕úα╕▒α╕Üα╕çα╕▓α╕Öα╕₧α╕┤α╕íα╕₧α╣îα╕òα╕▓α╕íα╕ùα╕╡α╣êα╕òα╣ëα╕¡α╕çα╕üα╕▓α╕ú" },
 ]
 
-// ─────────────────────────────────────────────
+// ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 // Landing Page
-// ─────────────────────────────────────────────
+// ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 export default function Home() {
   const [authModal, setAuthModal] = useState<"login" | "register" | null>(null)
 
   return (
     <div className="min-h-screen bg-white">
-      {/* ═══════ Auth Modal ═══════ */}
+      {/* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ Auth Modal ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */}
       {authModal && (
         <AuthModal
           mode={authModal}
@@ -331,7 +329,7 @@ export default function Home() {
         />
       )}
 
-      {/* ═══════ Navbar ═══════ */}
+      {/* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ Navbar ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */}
       <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-6 lg:px-8 flex items-center justify-between h-16">
           {/* Logo */}
@@ -348,9 +346,9 @@ export default function Home() {
 
           {/* Nav Links */}
           <div className="hidden md:flex items-center gap-8 text-sm font-medium text-[#78909c]">
-            <a href="#features" className="hover:text-[#06B6D4] transition-colors">จุดเด่น</a>
-            <a href="#how-it-works" className="hover:text-[#06B6D4] transition-colors">วิธีใช้งาน</a>
-            <a href="#contact" className="hover:text-[#06B6D4] transition-colors">ติดต่อ</a>
+            <a href="#features" className="hover:text-[#06B6D4] transition-colors">α╕êα╕╕α╕öα╣Çα╕öα╣êα╕Ö</a>
+            <a href="#how-it-works" className="hover:text-[#06B6D4] transition-colors">α╕ºα╕┤α╕ÿα╕╡α╣âα╕èα╣ëα╕çα╕▓α╕Ö</a>
+            <a href="#contact" className="hover:text-[#06B6D4] transition-colors">α╕òα╕┤α╕öα╕òα╣êα╕¡</a>
           </div>
 
           {/* Auth Buttons */}
@@ -359,19 +357,19 @@ export default function Home() {
               onClick={() => setAuthModal("login")}
               className="px-5 py-2 text-sm font-semibold text-[#455a64] hover:text-[#06B6D4] transition-colors"
             >
-              เข้าสู่ระบบ
+              α╣Çα╕éα╣ëα╕▓α╕¬α╕╣α╣êα╕úα╕░α╕Üα╕Ü
             </button>
             <button
               onClick={() => setAuthModal("register")}
               className="px-5 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-[#06B6D4] to-[#0891b2] rounded-xl shadow-md shadow-[#06B6D4]/25 hover:shadow-lg hover:shadow-[#06B6D4]/30 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
             >
-              สมัครสมาชิก
+              α╕¬α╕íα╕▒α╕äα╕úα╕¬α╕íα╕▓α╕èα╕┤α╕ü
             </button>
           </div>
         </div>
       </nav>
 
-      {/* ═══════ Hero Section ═══════ */}
+      {/* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ Hero Section ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */}
       <section className="relative overflow-hidden">
         {/* Background decorations */}
         <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-[#06B6D4]/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none" />
@@ -382,7 +380,7 @@ export default function Home() {
           <div className="flex-1 text-center lg:text-left">
             <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#E0F7FA] rounded-full text-[#06B6D4] text-xs font-semibold mb-4">
               <span className="w-1.5 h-1.5 bg-[#06B6D4] rounded-full animate-pulse" />
-              บริการพิมพ์งานออนไลน์
+              α╕Üα╕úα╕┤α╕üα╕▓α╕úα╕₧α╕┤α╕íα╕₧α╣îα╕çα╕▓α╕Öα╕¡α╕¡α╕Öα╣äα╕Ñα╕Öα╣î
             </div>
 
             <h1 className="text-5xl lg:text-6xl font-bold leading-[1.2] text-[#455a64] tracking-tight">
@@ -394,8 +392,8 @@ export default function Home() {
             </h1>
 
             <p className="mt-5 text-lg lg:text-xl text-[#78909c] leading-relaxed max-w-md mx-auto lg:mx-0">
-              บริการถ่ายเอกสาร พิมพ์งาน และเข้าเล่มออนไลน์ คำนวณราคาอัตโนมัติ
-              รวดเร็ว สะดวก โปร่งใส มั่นใจในทุกขั้นตอน
+              α╕Üα╕úα╕┤α╕üα╕▓α╕úα╕ûα╣êα╕▓α╕óα╣Çα╕¡α╕üα╕¬α╕▓α╕ú α╕₧α╕┤α╕íα╕₧α╣îα╕çα╕▓α╕Ö α╣üα╕Ñα╕░α╣Çα╕éα╣ëα╕▓α╣Çα╕Ñα╣êα╕íα╕¡α╕¡α╕Öα╣äα╕Ñα╕Öα╣î α╕äα╕│α╕Öα╕ºα╕ôα╕úα╕▓α╕äα╕▓α╕¡α╕▒α╕òα╣éα╕Öα╕íα╕▒α╕òα╕┤
+              α╕úα╕ºα╕öα╣Çα╕úα╣çα╕º α╕¬α╕░α╕öα╕ºα╕ü α╣éα╕¢α╕úα╣êα╕çα╣âα╕¬ α╕íα╕▒α╣êα╕Öα╣âα╕êα╣âα╕Öα╕ùα╕╕α╕üα╕éα╕▒α╣ëα╕Öα╕òα╕¡α╕Ö
             </p>
 
             <div className="flex flex-col sm:flex-row gap-3 mt-7 justify-center lg:justify-start">
@@ -403,7 +401,7 @@ export default function Home() {
                 onClick={() => setAuthModal("register")}
                 className="inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-bold text-white bg-gradient-to-r from-[#06B6D4] to-[#0891b2] rounded-xl shadow-lg shadow-[#06B6D4]/25 hover:shadow-xl hover:shadow-[#06B6D4]/30 hover:scale-[1.02] active:scale-[0.98] transition-all duration-300"
               >
-                เริ่มต้นใช้งาน
+                α╣Çα╕úα╕┤α╣êα╕íα╕òα╣ëα╕Öα╣âα╕èα╣ëα╕çα╕▓α╕Ö
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17 8l4 4m0 0l-4 4m4-4H3" />
                 </svg>
@@ -412,12 +410,12 @@ export default function Home() {
                 onClick={() => setAuthModal("login")}
                 className="inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-bold text-[#455a64] bg-white border-2 border-[#e5e7eb] rounded-xl shadow-sm hover:border-[#06B6D4] hover:text-[#06B6D4] hover:shadow-md transition-all duration-300"
               >
-                เข้าสู่ระบบ
+                α╣Çα╕éα╣ëα╕▓α╕¬α╕╣α╣êα╕úα╕░α╕Üα╕Ü
               </button>
             </div>
           </div>
 
-          {/* Right — Illustration */}
+          {/* Right ΓÇö Illustration */}
           <div className="flex-1 flex justify-center">
             <div className="relative">
               <div className="w-[320px] h-[360px] lg:w-[400px] lg:h-[440px] bg-gradient-to-br from-[#E0F7FA] to-[#B2EBF2] rounded-[40px] border-[10px] border-white shadow-2xl shadow-[#06B6D4]/10 flex items-center justify-center overflow-hidden">
@@ -427,20 +425,18 @@ export default function Home() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
                     </svg>
                   </div>
-                  <p className="text-2xl font-bold text-[#455a64] leading-snug">
-                    สะดวก <span className="text-[#06B6D4]">รวดเร็ว</span><br />ทุกที่ ทุกเวลา
-                  </p>
-                  <p className="text-[#90a4ae] text-xs mt-2 leading-relaxed">
-                    บริการพิมพ์งานออนไลน์<br />ครบจบในที่เดียว
-                  </p>
-                  <div className="flex flex-col gap-2 mt-8 items-center">
-                    <span className="inline-flex items-center gap-1.5 bg-white/80 backdrop-blur text-green-600 text-xs font-semibold px-3 py-1.5 rounded-full shadow-sm">
-                      <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-                      พร้อมให้บริการ
-                    </span>
-                    <span className="inline-flex items-center gap-1.5 bg-white/80 backdrop-blur text-amber-500 text-xs font-semibold px-3 py-1.5 rounded-full shadow-sm">
-                      ⚡ รวดเร็ว ทันใจ
-                    </span>
+                  <p className="text-xl font-bold text-[#455a64]">EASY<span className="text-[#06B6D4]">PRINT</span></p>
+                  <p className="text-[#78909c] text-sm mt-1">α╕¬α╕░α╕öα╕ºα╕ü α╕úα╕ºα╕öα╣Çα╕úα╣çα╕º α╕ùα╕╕α╕üα╕ùα╕╡α╣ê α╕ùα╕╕α╕üα╣Çα╕ºα╕Ñα╕▓</p>
+
+                  <div className="flex gap-4 mt-10 justify-center">
+                    <div className="bg-white/80 backdrop-blur rounded-xl px-4 py-3 shadow-sm">
+                      <p className="text-xl font-bold text-[#06B6D4]">500+</p>
+                      <p className="text-xs text-[#90a4ae] font-medium">α╕Ñα╕╣α╕üα╕äα╣ëα╕▓α╣âα╕èα╣ëα╕Üα╕úα╕┤α╕üα╕▓α╕ú</p>
+                    </div>
+                    <div className="bg-white/80 backdrop-blur rounded-xl px-4 py-3 shadow-sm">
+                      <p className="text-xl font-bold text-[#06B6D4]">99%</p>
+                      <p className="text-xs text-[#90a4ae] font-medium">α╕äα╕ºα╕▓α╕íα╕₧α╕╢α╕çα╕₧α╕¡α╣âα╕ê</p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -459,14 +455,14 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ═══════ Features Section ═══════ */}
+      {/* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ Features Section ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */}
       <section id="features" className="bg-[#FAFCFD] py-14 lg:py-20 border-t border-[#E0F3F7]">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <div className="text-center mb-10">
             <p className="text-[#06B6D4] font-semibold text-xs uppercase tracking-widest mb-2">Features</p>
-            <h2 className="text-2xl lg:text-3xl font-bold text-[#455a64]">ทำไมต้อง EasyPrint?</h2>
+            <h2 className="text-2xl lg:text-3xl font-bold text-[#455a64]">α╕ùα╕│α╣äα╕íα╕òα╣ëα╕¡α╕ç EasyPrint?</h2>
             <p className="text-[#90a4ae] text-sm mt-3 max-w-md mx-auto">
-              ระบบสั่งพิมพ์ออนไลน์ที่ออกแบบมาให้ใช้งานง่าย สะดวก ครบจบในที่เดียว
+              α╕úα╕░α╕Üα╕Üα╕¬α╕▒α╣êα╕çα╕₧α╕┤α╕íα╕₧α╣îα╕¡α╕¡α╕Öα╣äα╕Ñα╕Öα╣îα╕ùα╕╡α╣êα╕¡α╕¡α╕üα╣üα╕Üα╕Üα╕íα╕▓α╣âα╕½α╣ëα╣âα╕èα╣ëα╕çα╕▓α╕Öα╕çα╣êα╕▓α╕ó α╕¬α╕░α╕öα╕ºα╕ü α╕äα╕úα╕Üα╕êα╕Üα╣âα╕Öα╕ùα╕╡α╣êα╣Çα╕öα╕╡α╕óα╕º
             </p>
           </div>
 
@@ -487,14 +483,14 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ═══════ How It Works ═══════ */}
+      {/* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ How It Works ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */}
       <section id="how-it-works" className="py-14 lg:py-20">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <div className="text-center mb-10">
             <p className="text-[#06B6D4] font-semibold text-xs uppercase tracking-widest mb-2">How It Works</p>
-            <h2 className="text-2xl lg:text-3xl font-bold text-[#455a64]">ขั้นตอนง่ายๆ</h2>
+            <h2 className="text-2xl lg:text-3xl font-bold text-[#455a64]">α╕éα╕▒α╣ëα╕Öα╕òα╕¡α╕Öα╕çα╣êα╕▓α╕óα╣å</h2>
             <p className="text-[#90a4ae] text-sm mt-3 max-w-md mx-auto">
-              เพียง 4 ขั้นตอนก็พร้อมรับงานพิมพ์คุณภาพ
+              α╣Çα╕₧α╕╡α╕óα╕ç 4 α╕éα╕▒α╣ëα╕Öα╕òα╕¡α╕Öα╕üα╣çα╕₧α╕úα╣ëα╕¡α╕íα╕úα╕▒α╕Üα╕çα╕▓α╕Öα╕₧α╕┤α╕íα╕₧α╣îα╕äα╕╕α╕ôα╕áα╕▓α╕₧
             </p>
           </div>
 
@@ -519,7 +515,7 @@ export default function Home() {
               onClick={() => setAuthModal("register")}
               className="inline-flex items-center gap-2 px-7 py-3 text-sm font-bold text-white bg-gradient-to-r from-[#06B6D4] to-[#0891b2] rounded-xl shadow-lg shadow-[#06B6D4]/25 hover:shadow-xl hover:shadow-[#06B6D4]/30 hover:scale-[1.02] active:scale-[0.98] transition-all duration-300"
             >
-              เริ่มใช้งานฟรี
+              α╣Çα╕úα╕┤α╣êα╕íα╣âα╕èα╣ëα╕çα╕▓α╕Öα╕ƒα╕úα╕╡
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17 8l4 4m0 0l-4 4m4-4H3" />
               </svg>
@@ -528,23 +524,23 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ═══════ Footer ═══════ */}
-      <footer id="contact" className="bg-white border-t border-gray-100 pt-14 pb-8 text-[#455a64]">
+      {/* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ Footer ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */}
+      <footer id="contact" className="bg-[#0f2a38] text-white pt-14 pb-8">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-10 mb-10">
             <div className="md:col-span-2">
               <div className="flex items-center gap-2.5 mb-4">
-                <div className="w-9 h-9 bg-gradient-to-br from-[#06B6D4] to-[#0891b2] rounded-xl flex items-center justify-center shadow-md shadow-[#06B6D4]/20">
+                <div className="w-9 h-9 bg-gradient-to-br from-[#06B6D4] to-[#0891b2] rounded-xl flex items-center justify-center shadow-md">
                   <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
                   </svg>
                 </div>
-                <span className="text-xl font-bold text-[#455a64]">
+                <span className="text-xl font-bold">
                   EASY<span className="text-[#06B6D4]">PRINT</span>
                 </span>
               </div>
-              <p className="text-[#78909c] text-sm leading-relaxed max-w-sm">
-                ประสบการณ์ใหม่สำหรับการสั่งพิมพ์งานออนไลน์ เพื่อความสะดวกสบาย พร้อมการแจ้งเตือนสถานะ ครบจบในที่เดียว
+              <p className="text-gray-400 text-sm leading-relaxed max-w-sm">
+                α╕¢α╕úα╕░α╕¬α╕Üα╕üα╕▓α╕úα╕ôα╣îα╣âα╕½α╕íα╣êα╕¬α╕│α╕½α╕úα╕▒α╕Üα╕üα╕▓α╕úα╕¬α╕▒α╣êα╕çα╕₧α╕┤α╕íα╕₧α╣îα╕çα╕▓α╕Öα╕¡α╕¡α╕Öα╣äα╕Ñα╕Öα╣î α╣Çα╕₧α╕╖α╣êα╕¡α╕äα╕ºα╕▓α╕íα╕¬α╕░α╕öα╕ºα╕üα╕¬α╕Üα╕▓α╕ó α╕₧α╕úα╣ëα╕¡α╕íα╕üα╕▓α╕úα╣üα╕êα╣ëα╕çα╣Çα╕òα╕╖α╕¡α╕Öα╕¬α╕ûα╕▓α╕Öα╕░ α╕äα╕úα╕Üα╕êα╕Üα╣âα╕Öα╕ùα╕╡α╣êα╣Çα╕öα╕╡α╕óα╕º
               </p>
 
               <div className="flex gap-3 mt-6">
@@ -556,7 +552,7 @@ export default function Home() {
                   </>,
                   <path key="chat" d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />,
                 ].map((icon, i) => (
-                  <button key={i} className="w-9 h-9 rounded-xl border border-gray-200 flex items-center justify-center text-[#78909c] hover:text-[#06B6D4] hover:border-[#06B6D4] hover:bg-[#06B6D4]/10 transition-all duration-200">
+                  <button key={i} className="w-9 h-9 rounded-xl border border-gray-600 flex items-center justify-center text-gray-400 hover:text-[#06B6D4] hover:border-[#06B6D4] hover:bg-[#06B6D4]/10 transition-all duration-200">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       {icon}
                     </svg>
@@ -567,8 +563,8 @@ export default function Home() {
 
             <div>
               <h4 className="text-[#06B6D4] font-semibold uppercase tracking-widest text-xs mb-4">Platform</h4>
-              <ul className="space-y-2.5 text-[#78909c] text-sm">
-                {["สั่งพิมพ์งาน", "ดูราคาบริการ", "ติดตามสถานะ", "ช่วยเหลือ"].map((item) => (
+              <ul className="space-y-2.5 text-gray-400 text-sm">
+                {["α╕¬α╕▒α╣êα╕çα╕₧α╕┤α╕íα╕₧α╣îα╕çα╕▓α╕Ö", "α╕öα╕╣α╕úα╕▓α╕äα╕▓α╕Üα╕úα╕┤α╕üα╕▓α╕ú", "α╕òα╕┤α╕öα╕òα╕▓α╕íα╕¬α╕ûα╕▓α╕Öα╕░", "α╕èα╣êα╕ºα╕óα╣Çα╕½α╕Ñα╕╖α╕¡"].map((item) => (
                   <li key={item}>
                     <a href="#" className="hover:text-[#06B6D4] transition-colors inline-flex items-center gap-1.5 group">
                       <span className="w-0 group-hover:w-3 h-px bg-[#06B6D4] transition-all duration-200 rounded-full" />
@@ -581,8 +577,8 @@ export default function Home() {
 
             <div>
               <h4 className="text-[#06B6D4] font-semibold uppercase tracking-widest text-xs mb-4">Company</h4>
-              <ul className="space-y-2.5 text-[#78909c] text-sm">
-                {["เกี่ยวกับเรา", "นโยบายความเป็นส่วนตัว", "ข้อกำหนดการใช้งาน"].map((item) => (
+              <ul className="space-y-2.5 text-gray-400 text-sm">
+                {["α╣Çα╕üα╕╡α╣êα╕óα╕ºα╕üα╕▒α╕Üα╣Çα╕úα╕▓", "α╕Öα╣éα╕óα╕Üα╕▓α╕óα╕äα╕ºα╕▓α╕íα╣Çα╕¢α╣çα╕Öα╕¬α╣êα╕ºα╕Öα╕òα╕▒α╕º", "α╕éα╣ëα╕¡α╕üα╕│α╕½α╕Öα╕öα╕üα╕▓α╕úα╣âα╕èα╣ëα╕çα╕▓α╕Ö"].map((item) => (
                   <li key={item}>
                     <a href="#" className="hover:text-[#06B6D4] transition-colors inline-flex items-center gap-1.5 group">
                       <span className="w-0 group-hover:w-3 h-px bg-[#06B6D4] transition-all duration-200 rounded-full" />
@@ -594,8 +590,8 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="border-t border-gray-100 pt-6 text-center text-[#90a4ae] text-xs">
-            © 2026 EasyPrint. All rights reserved.
+          <div className="border-t border-gray-700 pt-6 text-center text-gray-500 text-xs">
+            ┬⌐ 2026 EasyPrint. All rights reserved.
           </div>
         </div>
       </footer>
