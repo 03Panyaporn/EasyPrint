@@ -269,15 +269,15 @@ function CancelModal({
                             >
                                 ปิด
                             </button>
-                            <Link
-                                href="/customer/chat"
+                            <button
+                                onClick={onConfirm} // Using the chat initiation from parent
                                 className="flex-1 py-3 rounded-xl bg-gradient-to-r from-[#06B6D4] to-[#0891b2] text-white text-sm font-bold hover:shadow-lg hover:shadow-[#06B6D4]/30 active:scale-[0.97] transition-all duration-200 text-center flex items-center justify-center gap-2"
                             >
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                                     <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                                 </svg>
                                 แชทกับร้านค้า
-                            </Link>
+                            </button>
                         </div>
                     </>
                 )}
@@ -300,6 +300,34 @@ export default function TrackingPage() {
     const [activeFilter, setActiveFilter] = useState(FILTER_ALL);
     const [orders, setOrders] = useState(initialOrders);
     const [cancellingOrder, setCancellingOrder] = useState<{ id: string; product: string; price: number } | null>(null);
+    const [loadingChat, setLoadingChat] = useState(false);
+
+    const handleStartChat = async () => {
+        setLoadingChat(true)
+        try {
+            const user = JSON.parse(localStorage.getItem('user') || '{}')
+            const res = await fetch('http://localhost:3001/api/chat/get-or-create-room', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    customer_id: user.id,
+                    merchant_id: 'b9652bb2-cba5-4440-9d89-0f93f598cb67'
+                }),
+            })
+            const roomData = await res.json()
+            if (res.ok && roomData.id) {
+                window.location.href = `/customer/chat/${roomData.id}`
+            } else {
+                const errorMsg = roomData.details || roomData.error || "ไม่สามารถเริ่มการสนทนาได้"
+                alert(`เกิดข้อผิดพลาด: ${errorMsg}\n\nคำแนะนำ: ${roomData.hint || 'กรุณาตรวจสอบรหัสร้านค้า'}`)
+            }
+        } catch (error) {
+            console.error("Failed to start chat:", error)
+            alert("ไม่สามารถเริ่มการสนทนาได้ในขณะนี้")
+        } finally {
+            setLoadingChat(false)
+        }
+    }
 
     // นับจำนวนออเดอร์ในแต่ละสถานะ
     const statusCounts = steps.map((step) =>
@@ -362,9 +390,9 @@ export default function TrackingPage() {
                                         {/* Icon circle */}
                                         <div
                                             className={`w-[58px] h-[58px] rounded-2xl flex items-center justify-center transition-all duration-300 ${isActive
-                                                    ? `bg-gradient-to-br ${step.gradient} shadow-lg ring-[3px] ring-offset-2 ring-offset-white ${step.label === "ยกเลิก" ? "ring-red-300 shadow-red-400/30" : step.label === "รอตรวจสอบสลิป" ? "ring-amber-300 shadow-amber-400/30" : step.label === "กำลังดำเนินการ" ? "ring-blue-300 shadow-blue-400/30" : step.label === "รับแล้ว" ? "ring-emerald-300 shadow-emerald-400/30" : "ring-[#06B6D4]/40 shadow-[#06B6D4]/30"
-                                                    }`
-                                                    : `bg-gradient-to-br ${step.gradient} opacity-50 group-hover:opacity-100 shadow-md group-hover:shadow-lg`
+                                                ? `bg-gradient-to-br ${step.gradient} shadow-lg ring-[3px] ring-offset-2 ring-offset-white ${step.label === "ยกเลิก" ? "ring-red-300 shadow-red-400/30" : step.label === "รอตรวจสอบสลิป" ? "ring-amber-300 shadow-amber-400/30" : step.label === "กำลังดำเนินการ" ? "ring-blue-300 shadow-blue-400/30" : step.label === "รับแล้ว" ? "ring-emerald-300 shadow-emerald-400/30" : "ring-[#06B6D4]/40 shadow-[#06B6D4]/30"
+                                                }`
+                                                : `bg-gradient-to-br ${step.gradient} opacity-50 group-hover:opacity-100 shadow-md group-hover:shadow-lg`
                                                 }`}
                                         >
                                             {step.icon}
@@ -373,10 +401,10 @@ export default function TrackingPage() {
                                         {/* Badge */}
                                         {count > 0 && (
                                             <span className={`absolute -top-1.5 -right-0.5 min-w-[22px] h-[22px] text-white text-[10px] font-bold rounded-full flex items-center justify-center leading-none px-1.5 shadow-md border-2 border-white transition-all duration-300 ${step.label === "ยกเลิก" ? "bg-gradient-to-r from-red-500 to-rose-500"
-                                                    : step.label === "รอตรวจสอบสลิป" ? "bg-gradient-to-r from-amber-500 to-orange-500"
-                                                        : step.label === "กำลังดำเนินการ" ? "bg-gradient-to-r from-blue-500 to-indigo-500"
-                                                            : step.label === "รับแล้ว" ? "bg-gradient-to-r from-emerald-500 to-green-500"
-                                                                : "bg-gradient-to-r from-red-500 to-rose-500"
+                                                : step.label === "รอตรวจสอบสลิป" ? "bg-gradient-to-r from-amber-500 to-orange-500"
+                                                    : step.label === "กำลังดำเนินการ" ? "bg-gradient-to-r from-blue-500 to-indigo-500"
+                                                        : step.label === "รับแล้ว" ? "bg-gradient-to-r from-emerald-500 to-green-500"
+                                                            : "bg-gradient-to-r from-red-500 to-rose-500"
                                                 }`}>
                                                 {count}
                                             </span>
@@ -385,8 +413,8 @@ export default function TrackingPage() {
                                         {/* Label */}
                                         <span
                                             className={`mt-2.5 text-[11px] font-semibold text-center transition-all duration-300 leading-tight ${isActive
-                                                    ? step.label === "ยกเลิก" ? "text-red-500" : step.label === "รอตรวจสอบสลิป" ? "text-amber-600" : step.label === "กำลังดำเนินการ" ? "text-blue-600" : step.label === "รับแล้ว" ? "text-emerald-600" : "text-[#06B6D4]"
-                                                    : "text-gray-400 group-hover:text-gray-600"
+                                                ? step.label === "ยกเลิก" ? "text-red-500" : step.label === "รอตรวจสอบสลิป" ? "text-amber-600" : step.label === "กำลังดำเนินการ" ? "text-blue-600" : step.label === "รับแล้ว" ? "text-emerald-600" : "text-[#06B6D4]"
+                                                : "text-gray-400 group-hover:text-gray-600"
                                                 }`}
                                         >
                                             {step.label}
@@ -432,10 +460,10 @@ export default function TrackingPage() {
                                                 <td className="py-4 px-4 text-center">
                                                     <span className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-[11px] font-semibold ${getStatusStyle(order.status)}`}>
                                                         <span className={`w-1.5 h-1.5 rounded-full ${order.status === "รอตรวจสอบสลิป" ? "bg-amber-500" :
-                                                                order.status === "กำลังดำเนินการ" ? "bg-blue-500 animate-pulse" :
-                                                                    order.status === "เสร็จรอรับ" ? "bg-cyan-500" :
-                                                                        order.status === "รับแล้ว" ? "bg-emerald-500" :
-                                                                            "bg-red-500"
+                                                            order.status === "กำลังดำเนินการ" ? "bg-blue-500 animate-pulse" :
+                                                                order.status === "เสร็จรอรับ" ? "bg-cyan-500" :
+                                                                    order.status === "รับแล้ว" ? "bg-emerald-500" :
+                                                                        "bg-red-500"
                                                             }`} />
                                                         {order.status}
                                                     </span>
@@ -449,15 +477,16 @@ export default function TrackingPage() {
                                                             ยกเลิก
                                                         </button>
                                                     ) : order.status === "ยกเลิก" ? (
-                                                        <Link
-                                                            href="/customer/chat"
-                                                            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-[#06B6D4] to-[#0891b2] text-white text-xs font-semibold hover:shadow-md hover:shadow-[#06B6D4]/30 active:scale-95 transition-all duration-200"
+                                                        <button
+                                                            onClick={handleStartChat}
+                                                            disabled={loadingChat}
+                                                            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-[#06B6D4] to-[#0891b2] text-white text-xs font-semibold hover:shadow-md hover:shadow-[#06B6D4]/30 active:scale-95 transition-all duration-200 disabled:opacity-50"
                                                         >
                                                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                                                                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                                                             </svg>
-                                                            แชท
-                                                        </Link>
+                                                            {loadingChat ? "รอ..." : "แชท"}
+                                                        </button>
                                                     ) : (
                                                         <span className="text-gray-200 text-xs">—</span>
                                                     )}
@@ -500,7 +529,7 @@ export default function TrackingPage() {
             {cancellingOrder && (
                 <CancelModal
                     order={cancellingOrder}
-                    onConfirm={() => handleCancelOrder(cancellingOrder.id)}
+                    onConfirm={handleStartChat} // Redefining onConfirm for the "Chat" button in modal
                     onClose={() => setCancellingOrder(null)}
                 />
             )}

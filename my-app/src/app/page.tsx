@@ -46,7 +46,12 @@ function AuthModal({
       localStorage.setItem("user", JSON.stringify(data.user))
       document.cookie = `access_token=${data.session.access_token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`
 
-      window.location.href = "/customer"
+      // Redirect ตามบทบาท (Role)
+      if (data.user.role === 'merchant') {
+        window.location.href = "/shop"
+      } else {
+        window.location.href = "/customer"
+      }
     } catch {
       setError("ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้")
     } finally {

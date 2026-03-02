@@ -31,7 +31,8 @@ export function middleware(request: NextRequest) {
     const isAuthPage = authPaths.some((path) => pathname.startsWith(path))
 
     if (isAuthPage && token) {
-        return NextResponse.redirect(new URL('/customer', request.url))
+        // ถ้าล็อกอินแล้ว ไม่ให้เข้าหน้า login/register ให้ไปหน้าแรกของแต่ละบทบาท
+        return NextResponse.redirect(new URL('/', request.url))
     }
 
     return NextResponse.next()

@@ -1,5 +1,10 @@
 import { Hono } from 'hono'
 import { supabase } from '../lib/supabase.js'
+import { SignJWT } from 'jose'
+
+const JWT_SECRET = new TextEncoder().encode(
+    process.env.JWT_SECRET ?? 'easyprint-secret-key-change-this-in-production'
+)
 
 export const authRoute = new Hono()
 
@@ -75,6 +80,7 @@ authRoute.post('/login', async (c) => {
                 id: data.user.id,
                 email: data.user.email,
                 name: data.user.user_metadata?.name,
+                role: data.user.user_metadata?.role || 'customer', // Default เป็น customer
             },
             session: {
                 access_token: data.session.access_token,
@@ -87,6 +93,8 @@ authRoute.post('/login', async (c) => {
         return c.json({ error: 'เกิดข้อผิดพลาดในระบบ' }, 500)
     }
 })
+
+// (Removed shop-login as it is now combined into the main login)
 
 // ==========================================
 // POST /api/auth/logout — ออกจากระบบ

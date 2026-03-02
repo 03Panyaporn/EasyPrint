@@ -19,6 +19,7 @@ import {
     Printer,
     ChevronRight,
     X,
+    MessageSquare,
 } from "lucide-react"
 
 const statsCards = [
@@ -318,6 +319,11 @@ export default function ShopDashboard() {
                 </div>
 
                 <div className="flex items-center gap-6">
+                    <Link href="/shop/chat" className="relative p-2 text-gray-400 hover:text-[#06B6D4] transition-colors">
+                        <MessageSquare size={22} />
+                        <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full border-2 border-white" />
+                    </Link>
+
                     <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-2xl border border-[#e5e7eb] shadow-sm">
                         <div className="flex flex-col text-right">
                             <span className="text-xs font-medium text-[#90a4ae]">สถานะร้านค้า</span>

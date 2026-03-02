@@ -1,6 +1,44 @@
+"use client"
+
+import { useState } from "react"
 import Link from "next/link"
+import { MessageSquare } from "lucide-react"
 
 export default function CustomerHome() {
+    const [loadingChat, setLoadingChat] = useState(false)
+
+    const handleStartChat = async () => {
+        setLoadingChat(true)
+        try {
+            const user = JSON.parse(localStorage.getItem('user') || '{}')
+            // ในระบบจริงต้องมีวิธีหา merchant_id ที่ต้องการคุยด้วย
+            // เบื้องต้นขอใช้ค่าคงที่ หรือค้นหาจาก merchant account แรกในระบบ
+            // สมมติว่ามี Merchant ID หนึ่งที่คอยดูแลระบบ (เช่น Admin หรือ Shop หลัก)
+            // สำหรับการทดสอบนี้ ผมจะใช้วิธีเรียก API ค้นหา merchant หรือแสดง Error ถ้าไม่พบ
+
+            const res = await fetch('http://localhost:3001/api/chat/get-or-create-room', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    customer_id: user.id,
+                    merchant_id: 'b9652bb2-cba5-4440-9d89-0f93f598cb67' // ใส่ ID ร้านค้าที่คุณสร้างไว้
+                }),
+            })
+            const roomData = await res.json()
+            if (res.ok && roomData.id) {
+                window.location.href = `/customer/chat/${roomData.id}`
+            } else {
+                const errorMsg = roomData.details || roomData.error || "ไม่สามารถเริ่มการสนทนาได้"
+                alert(`เกิดข้อผิดพลาด: ${errorMsg}\n\nคำแนะนำ: ${roomData.hint || 'กรุณาตรวจสอบรหัสร้านค้า'}`)
+            }
+        } catch (error) {
+            console.error("Failed to start chat:", error)
+            alert("ไม่สามารถเริ่มการสนทนาได้ในขณะนี้")
+        } finally {
+            setLoadingChat(false)
+        }
+    }
+
     return (
         <>
             <section className="relative overflow-hidden bg-white">
@@ -40,12 +78,14 @@ export default function CustomerHome() {
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17 8l4 4m0 0l-4 4m4-4H3" />
                                 </svg>
                             </Link>
-                            <Link
-                                href="/customer/pricing"
-                                className="inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-bold text-[#455a64] bg-white border-2 border-[#e5e7eb] rounded-xl shadow-sm hover:border-[#06B6D4] hover:text-[#06B6D4] hover:shadow-md transition-all duration-300"
+                            <button
+                                onClick={handleStartChat}
+                                disabled={loadingChat}
+                                className="inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-bold text-[#06B6D4] bg-white border-2 border-[#06B6D4] rounded-xl shadow-sm hover:bg-[#E0F7FA] hover:shadow-md transition-all duration-300"
                             >
-                                ดูราคา
-                            </Link>
+                                <MessageSquare size={18} />
+                                {loadingChat ? 'กำลังเชื่อมต่อ...' : 'ทักแชทร้านค้า'}
+                            </button>
                         </div>
                     </div>
 

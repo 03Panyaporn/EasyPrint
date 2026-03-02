@@ -4,6 +4,7 @@ import { logger } from 'hono/logger'
 import { serve } from '@hono/node-server'
 import { exampleRoute } from './routes/example.js'
 import { authRoute } from './routes/auth.js'
+import { chatRoute } from './routes/chat.js'
 
 const app = new Hono()
 
@@ -32,6 +33,7 @@ app.get('/api/health', (c) => {
 
 app.route('/api/example', exampleRoute)
 app.route('/api/auth', authRoute)
+app.route('/api/chat', chatRoute)
 
 // Start server
 const port = Number(process.env.PORT ?? 3001)

@@ -38,9 +38,15 @@ function LoginContent() {
             localStorage.setItem('user', JSON.stringify(data.user))
 
             // เก็บใน cookie (สำหรับ middleware server-side)
+            // เก็บใน cookie (สำหรับ middleware server-side)
             document.cookie = `access_token=${data.session.access_token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`
 
-            window.location.href = redirectTo
+            // Redirect ตามบทบาท (Role)
+            if (data.user.role === 'merchant') {
+                window.location.href = '/shop'
+            } else {
+                window.location.href = redirectTo
+            }
         } catch {
             setError('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้')
         } finally {
@@ -82,7 +88,7 @@ function LoginContent() {
                             type="email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
-                            placeholder="Value"
+                            placeholder="กรอกอีเมลของคุณ"
                             required
                             className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500/30 focus:border-cyan-500 transition-all text-sm"
                         />
@@ -97,7 +103,7 @@ function LoginContent() {
                             type="password"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                            placeholder="Value"
+                            placeholder="กรอกรหัสผ่านของคุณ"
                             required
                             className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500/30 focus:border-cyan-500 transition-all text-sm"
                         />
