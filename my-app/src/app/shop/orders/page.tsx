@@ -424,13 +424,22 @@ export default function OrdersPage() {
                                                         <Printer size={16} />
                                                     </button>
                                                 </div>
-                                                <button
-                                                    onClick={() => openUpdateModal(order)}
-                                                    className="flex items-center gap-2 px-4 py-2 bg-[#06B6D4] text-white rounded-xl text-xs font-bold hover:scale-105 hover:bg-[#0891b2] transition-all shadow-md shadow-[#06B6D4]/20"
-                                                >
-                                                    อัปเดตสถานะ
-                                                    <ChevronRight size={14} />
-                                                </button>
+                                                {order.status !== "ยกเลิก" && order.status !== "รับแล้ว" ? (
+                                                    <button
+                                                        onClick={() => openUpdateModal(order)}
+                                                        className="flex items-center gap-2 px-4 py-2 bg-[#06B6D4] text-white rounded-xl text-xs font-bold hover:scale-105 hover:bg-[#0891b2] transition-all shadow-md shadow-[#06B6D4]/20"
+                                                    >
+                                                        อัปเดตสถานะ
+                                                        <ChevronRight size={14} />
+                                                    </button>
+                                                ) : (
+                                                    <span className={`px-4 py-2 rounded-xl text-xs font-bold ${order.status === "ยกเลิก"
+                                                        ? "bg-rose-50 text-rose-400"
+                                                        : "bg-emerald-50 text-emerald-500"
+                                                        }`}>
+                                                        {order.status === "ยกเลิก" ? "ยกเลิกแล้ว" : "สำเร็จแล้ว"}
+                                                    </span>
+                                                )}
                                             </div>
                                         </td>
                                     </tr>
@@ -535,7 +544,7 @@ export default function OrdersPage() {
                         <div className="p-6 flex items-center gap-3">
                             <button
                                 onClick={handleCancelOrder}
-                                disabled={selectedOrder.status !== "ตรวจสอบสลิป" && selectedOrder.status !== "ยกเลิก"} // Can only cancel if checking slip or already cancelled
+                                disabled={selectedOrder.status !== "ตรวจสอบสลิป"} // Can only cancel if checking slip
                                 className={`flex-1 px-6 py-3 border rounded-2xl text-sm font-bold transition-all ${selectedOrder.status !== "ตรวจสอบสลิป"
                                     ? "border-gray-100 text-gray-300 cursor-not-allowed bg-gray-50"
                                     : "border-[#e5e7eb] text-rose-500 hover:bg-rose-50"}`}
