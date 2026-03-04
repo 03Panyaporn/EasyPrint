@@ -31,7 +31,7 @@ export default function ShopChatPage({ params }: { params: Promise<{ roomId: str
                 <ChatWindow
                     roomId={roomId}
                     senderType="merchant"
-                    title={`แชทกับคุณ: ${customerName}`}
+                    title={`แชทของลูกค้า: ${customerName}`}
                 />
             </div>
         </div>

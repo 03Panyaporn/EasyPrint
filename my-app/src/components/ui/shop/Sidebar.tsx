@@ -1,4 +1,6 @@
 "use client"
+import { useState, useEffect } from "react"
+import { supabase } from "@/lib/supabase"
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
@@ -29,8 +31,14 @@ const bottomMenuItems = [
     { label: "ตั้งค่า", href: "/shop/settings", icon: Settings },
 ]
 
+import { useChatUnread } from "@/hooks/useChatUnread"
+
 export default function Sidebar() {
     const pathname = usePathname()
+    const [showLogoutModal, setShowLogoutModal] = useState(false)
+
+    const user = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || '{}') : {}
+    const unreadChatsCount = useChatUnread({ userId: user.id, userType: 'merchant' })
 
     const handleLogout = () => {
         localStorage.removeItem('access_token')
@@ -81,7 +89,12 @@ export default function Sidebar() {
                                     }`}
                             />
                             <span>{item.label}</span>
-                            {active && (
+                            {item.label === "แชท" && unreadChatsCount > 0 && (
+                                <span className="ml-auto min-w-[20px] h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1.5 animate-pulse">
+                                    {unreadChatsCount}
+                                </span>
+                            )}
+                            {active && item.label !== "แชท" && (
                                 <div className="ml-auto w-1.5 h-5 bg-[#06B6D4] rounded-full" />
                             )}
                         </Link>
@@ -123,7 +136,7 @@ export default function Sidebar() {
 
                 {/* Logout */}
                 <button
-                    onClick={handleLogout}
+                    onClick={() => setShowLogoutModal(true)}
                     className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-[#78909c] hover:bg-red-50 hover:text-red-500 transition-all duration-200 w-full group"
                 >
                     <LogOut
@@ -133,6 +146,38 @@ export default function Sidebar() {
                     <span>ออกจากระบบ</span>
                 </button>
             </div>
+
+            {/* Logout Confirmation Modal */}
+            {showLogoutModal && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-in fade-in duration-300">
+                    <div className="bg-white w-full max-w-[400px] rounded-[32px] shadow-2xl animate-in zoom-in-95 duration-300 relative overflow-hidden">
+                        <div className="p-8 text-center">
+                            <div className="w-20 h-20 bg-rose-50 rounded-full flex items-center justify-center text-rose-500 mx-auto mb-6">
+                                <LogOut size={40} />
+                            </div>
+                            <h3 className="text-2xl font-black text-[#455a64] mb-2">ออกจากระบบ?</h3>
+                            <p className="text-sm text-[#90a4ae] leading-relaxed mb-8">
+                                คุณแน่ใจหรือไม่ที่จะออกจากระบบร้านค้า?<br />
+                                ชั่นการทำงานปัจจุบันจะสิ้นสุดลง
+                            </p>
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => setShowLogoutModal(false)}
+                                    className="flex-1 py-4 bg-gray-50 text-[#90a4ae] rounded-2xl text-sm font-bold hover:bg-gray-100 transition-all border border-gray-100"
+                                >
+                                    ยกเลิก
+                                </button>
+                                <button
+                                    onClick={handleLogout}
+                                    className="flex-1 py-4 bg-rose-500 text-white rounded-2xl text-sm font-bold hover:bg-rose-600 transition-all shadow-lg shadow-rose-200"
+                                >
+                                    ยืนยัน
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </aside>
     )
 }

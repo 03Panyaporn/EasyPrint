@@ -30,12 +30,14 @@ export default function ShopInboxPage() {
         fetchRooms()
     }, [])
 
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
+
     const fetchRooms = async () => {
         try {
             const user = JSON.parse(localStorage.getItem('user') || '{}')
             console.log("🏪 Shop Inbox - Logged in as:", user.id, user.email)
 
-            const res = await fetch(`http://localhost:3001/api/chat/rooms?merchant_id=${user.id}`)
+            const res = await fetch(`${API_URL}/api/chat/rooms?merchant_id=${user.id}`)
             const data = await res.json()
             if (Array.isArray(data)) {
                 setRooms(data)

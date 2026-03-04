@@ -8,6 +8,7 @@ interface Message {
     id: string
     content: string
     sender_type: 'customer' | 'merchant'
+    is_read: boolean
     room_id: string
     created_at: string
 }
@@ -43,7 +44,33 @@ export default function ChatWindow({ roomId, senderType, title }: ChatWindowProp
             }
         }
 
+        async function markAsRead() {
+            try {
+                await fetch(`${API_URL}/api/chat/mark-as-read`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ room_id: roomId, viewer_type: senderType }),
+                })
+            } catch (err) {
+                console.error('Failed to mark as read:', err)
+            }
+        }
+
+        async function markMessagesAsRead() {
+            try {
+                await fetch(`${API_URL}/api/chat/mark-messages-as-read`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ room_id: roomId, viewer_type: senderType }),
+                })
+            } catch (err) {
+                console.error('Failed to mark messages as read:', err)
+            }
+        }
+
         fetchHistory()
+        markAsRead() // Original room unread count reset
+        markMessagesAsRead() // New individual messages read status update
 
         // 2. Setup Realtime
         const channel = supabase
@@ -63,6 +90,23 @@ export default function ChatWindow({ roomId, senderType, title }: ChatWindowProp
                         if (current.find(m => m.id === newMessage.id)) return current
                         return [...current, newMessage]
                     })
+                    // If receiving a message while in the room, mark it as read
+                    if (newMessage.sender_type !== senderType) {
+                        markMessagesAsRead()
+                    }
+                }
+            )
+            .on(
+                'postgres_changes',
+                {
+                    event: 'UPDATE',
+                    schema: 'public',
+                    table: 'messages',
+                    filter: `room_id=eq.${roomId}`,
+                },
+                (payload) => {
+                    const updatedMsg = payload.new as Message
+                    setMessages((current) => current.map(m => m.id === updatedMsg.id ? updatedMsg : m))
                 }
             )
             .subscribe()
@@ -162,10 +206,14 @@ export default function ChatWindow({ roomId, senderType, title }: ChatWindowProp
                                     }`}
                             >
                                 <p className="text-sm leading-relaxed">{msg.content}</p>
-                                <span className={`text-[10px] mt-1 block opacity-70 ${msg.sender_type === senderType ? 'text-right' : 'text-left'
-                                    }`}>
-                                    {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                </span>
+                                <div className={`flex items-center gap-1.5 mt-1 opacity-70 ${msg.sender_type === senderType ? 'justify-end' : 'justify-start'}`}>
+                                    {msg.sender_type === senderType && msg.is_read && (
+                                        <span className="text-[10px] font-bold text-cyan-200">อ่านแล้ว</span>
+                                    )}
+                                    <span className="text-[10px]">
+                                        {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                    </span>
+                                </div>
                             </div>
                         </div>
                     ))
