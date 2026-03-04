@@ -83,79 +83,103 @@ export default function ShopInboxPage() {
     )
 
     return (
-        <div className="p-8 max-w-5xl mx-auto">
-            <div className="mb-8 flex items-center justify-between">
+        <div className="p-10 max-w-6xl mx-auto min-h-screen bg-gray-50/30">
+            {/* Header Section */}
+            <div className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-800">กล่องข้อความ</h1>
-                    <p className="text-gray-500 text-sm mt-1">จัดการการพูดคุยกับลูกค้าทั้งหมด</p>
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-50 text-cyan-600 text-[10px] font-bold tracking-widest uppercase mb-3 border border-cyan-100">
+                        Chat Center
+                    </div>
+                    <h1 className="text-4xl font-black text-gray-900 tracking-tight">
+                        กล่องข้อความ <span className="text-cyan-500">Inbox</span>
+                    </h1>
+                    <p className="text-gray-500 text-base mt-2 font-medium">
+                        ตอบกลับลูกค้าและจัดการการสนทนาทั้งหมดในที่เดียว
+                    </p>
                 </div>
-                <div className="relative w-64">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <div className="relative group">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-cyan-500 transition-colors w-5 h-5" />
                     <input
                         type="text"
-                        placeholder="ค้นหาลูกค้า..."
+                        placeholder="ค้นหาชื่อลูกค้า หรืออีเมล..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 transition-all"
+                        className="w-full md:w-80 pl-12 pr-6 py-4 bg-white border-0 rounded-[20px] text-sm shadow-[0_10px_30px_rgba(0,0,0,0.04)] focus:outline-none focus:ring-2 focus:ring-cyan-500/10 transition-all placeholder:text-gray-400 font-medium"
                     />
                 </div>
             </div>
 
             {loading ? (
-                <div className="flex flex-col items-center justify-center py-20 bg-white rounded-3xl border border-gray-100 shadow-sm">
-                    <div className="w-10 h-10 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin mb-4" />
-                    <p className="text-gray-500 text-sm">กำลังโหลดรายการแชท...</p>
+                <div className="flex flex-col items-center justify-center py-32 bg-white/50 backdrop-blur-sm rounded-[40px] border border-white shadow-sm">
+                    <div className="w-14 h-14 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin mb-6" />
+                    <p className="text-gray-400 font-bold tracking-wide uppercase text-xs">กำลังเตรียมข้อมูลการแชท...</p>
                 </div>
             ) : filteredRooms.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-20 bg-white rounded-3xl border border-gray-100 shadow-sm text-center">
-                    <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-300 mb-4">
-                        <MessageSquare size={32} />
+                <div className="flex flex-col items-center justify-center py-32 bg-white/50 backdrop-blur-sm rounded-[40px] border border-white shadow-sm text-center px-10">
+                    <div className="w-24 h-24 bg-gradient-to-br from-gray-50 to-gray-100 rounded-[32px] flex items-center justify-center text-gray-300 mb-8 transform rotate-3 shadow-inner">
+                        <MessageSquare size={40} />
                     </div>
-                    <h3 className="text-gray-800 font-bold">ไม่มีรายการแชท</h3>
-                    <p className="text-gray-500 text-sm mt-1">เมื่อลูกค้าทักแชทมา จะปรากฏห้องแชทที่นี่</p>
+                    <h3 className="text-2xl font-black text-gray-800">ยังไม่มีรายการแชท</h3>
+                    <p className="text-gray-500 text-sm mt-3 max-w-xs mx-auto leading-relaxed">
+                        เมื่อลูกค้าเริ่มทักแชทสอบถามบริการ รายการแชทจะปรากฏขึ้นที่นี่ เพื่อให้คุณได้ดูแลลูกค้าอย่างรวดเร็ว
+                    </p>
                 </div>
             ) : (
-                <div className="grid gap-4">
-                    {filteredRooms.map((room) => (
-                        <Link
-                            key={room.id}
-                            href={`/shop/chat/${room.id}`}
-                            className="group bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-cyan-500/30 transition-all flex items-center justify-between"
-                        >
-                            <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 rounded-full bg-cyan-50 flex items-center justify-center text-cyan-600 font-bold shadow-inner uppercase">
-                                    {room.customer?.raw_user_meta_data?.name?.[0] || room.customer?.email?.[0] || <User size={20} />}
-                                </div>
-                                <div>
-                                    <div className="flex items-center gap-2">
-                                        <h3 className="font-bold text-gray-800">
-                                            {room.customer?.raw_user_meta_data?.name || room.customer?.email || `ลูกค้า #${room.customer_id.slice(0, 8)}`}
-                                        </h3>
-                                        {room.unread_count > 0 && (
-                                            <span className="bg-rose-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
-                                                {room.unread_count}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {filteredRooms.map((room) => {
+                        const name = room.customer?.raw_user_meta_data?.name || room.customer?.email || `ลูกค้า #${room.customer_id.slice(0, 8)}`;
+                        const firstChar = (name[0] || '?').toUpperCase();
+
+                        return (
+                            <Link
+                                key={room.id}
+                                href={`/shop/chat/${room.id}`}
+                                className="group bg-white p-6 rounded-[32px] border border-transparent shadow-[0_10px_30px_rgba(0,0,0,0.02)] hover:shadow-[0_20px_60px_rgba(0,0,0,0.06)] hover:border-cyan-500/10 hover:-translate-y-1 transition-all duration-300 flex items-center justify-between relative overflow-hidden"
+                            >
+                                {/* Decorative Gradient */}
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-50/30 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity" />
+
+                                <div className="flex items-center gap-5 relative z-10 w-full overflow-hidden">
+                                    <div className="shrink-0 w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-50 to-blue-50 flex items-center justify-center text-cyan-600 font-black text-xl shadow-inner border border-cyan-100/50 transform group-hover:rotate-6 transition-transform">
+                                        {firstChar}
+                                    </div>
+                                    <div className="flex-1 overflow-hidden">
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <h3 className="font-black text-gray-800 text-lg truncate group-hover:text-cyan-600 transition-colors">
+                                                {name}
+                                            </h3>
+                                            {room.unread_count > 0 && (
+                                                <span className="flex items-center justify-center h-5 px-2 bg-rose-500 text-white text-[10px] font-black rounded-full animate-pulse shadow-lg shadow-rose-200">
+                                                    {room.unread_count} ข้อความใหม่
+                                                </span>
+                                            )}
+                                        </div>
+                                        <p className="text-sm text-gray-500 truncate font-medium flex items-center gap-1.5 min-w-0">
+                                            {room.last_message ? (
+                                                <span className="truncate">{room.last_message}</span>
+                                            ) : (
+                                                <span className="italic">ยังไม่มีข้อความ</span>
+                                            )}
+                                        </p>
+                                        <div className="flex items-center gap-3 mt-3">
+                                            <span className="flex items-center gap-1.5 text-[11px] font-bold text-gray-400 bg-gray-50 px-2 rounded-lg py-1">
+                                                <Clock size={12} className="text-cyan-500" />
+                                                {new Date(room.updated_at).toLocaleDateString('th-TH', {
+                                                    day: '2-digit',
+                                                    month: 'short',
+                                                    hour: '2-digit',
+                                                    minute: '2-digit'
+                                                })}
                                             </span>
-                                        )}
-                                    </div>
-                                    <p className="text-sm text-gray-500 truncate max-w-md mt-0.5">
-                                        {room.last_message || "ยังไม่มีข้อความ"}
-                                    </p>
-                                    <div className="flex items-center gap-3 mt-2">
-                                        <span className="flex items-center gap-1 text-[11px] text-gray-400">
-                                            <Clock size={12} />
-                                            {new Date(room.updated_at).toLocaleDateString('th-TH', {
-                                                hour: '2-digit',
-                                                minute: '2-digit'
-                                            })}
-                                        </span>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                            <div className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-cyan-500 group-hover:text-white transition-all">
-                                <ChevronRight size={18} />
-                            </div>
-                        </Link>
-                    ))}
+                                <div className="shrink-0 ml-4 w-12 h-12 rounded-2xl bg-gray-50 flex items-center justify-center text-gray-300 group-hover:bg-cyan-500 group-hover:text-white group-hover:shadow-lg group-hover:shadow-cyan-200 transition-all duration-300 transform group-hover:rotate-12">
+                                    <ChevronRight size={22} />
+                                </div>
+                            </Link>
+                        )
+                    })}
                 </div>
             )}
         </div>

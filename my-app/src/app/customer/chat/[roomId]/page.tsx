@@ -5,13 +5,12 @@ export default function CustomerChatPage({ params }: { params: Promise<{ roomId:
     const { roomId } = use(params)
 
     return (
-        <div className="min-h-screen bg-gray-50 py-8 px-4">
-            <div className="max-w-4xl mx-auto">
-                <h1 className="text-2xl font-bold text-gray-900 mb-6 px-2">แชทกับร้านค้า</h1>
+        <div className="min-h-[calc(100vh-80px)] bg-[#f1f5f9] p-4 sm:p-8 flex flex-col items-center justify-center">
+            <div className="w-full max-w-[1600px] h-[850px] max-h-[calc(100vh-180px)]">
                 <ChatWindow
                     roomId={roomId}
                     senderType="customer"
-                    title="EasyPrint Support"
+                    title="EasyPrint Support (Official)"
                 />
             </div>
         </div>

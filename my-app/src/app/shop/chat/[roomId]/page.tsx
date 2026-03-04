@@ -2,6 +2,7 @@
 
 import ChatWindow from '@/components/chat/ChatWindow'
 import { use, useState, useEffect } from 'react'
+import { User, Store } from 'lucide-react'
 
 export default function ShopChatPage({ params }: { params: Promise<{ roomId: string }> }) {
     const { roomId } = use(params)
@@ -25,13 +26,12 @@ export default function ShopChatPage({ params }: { params: Promise<{ roomId: str
     }, [roomId])
 
     return (
-        <div className="min-h-screen bg-gray-50 py-8 px-4">
-            <div className="max-w-4xl mx-auto">
-                <h1 className="text-2xl font-bold text-gray-900 mb-6 px-2">จัดการแชท</h1>
+        <div className="h-screen bg-[#f1f5f9] p-4 sm:p-8">
+            <div className="max-w-[1600px] mx-auto h-full">
                 <ChatWindow
                     roomId={roomId}
                     senderType="merchant"
-                    title={`แชทของลูกค้า: ${customerName}`}
+                    title={customerName}
                 />
             </div>
         </div>
