@@ -1,4 +1,22 @@
+"use client"
+
+import { useEffect, useState } from "react"
+import { supabase } from "@/lib/supabase"
+
 export default function Footer() {
+    const [mapsUrl, setMapsUrl] = useState<string | null>(null)
+
+    useEffect(() => {
+        supabase
+            .from('shops')
+            .select('maps_url')
+            .eq('id', 'b9652bb2-cba5-4440-9d89-0f93f598cb67')
+            .single()
+            .then(({ data }) => {
+                if (data?.maps_url) setMapsUrl(data.maps_url)
+            })
+    }, [])
+
     return (
         <footer className="bg-white text-[#455a64] pt-10 pb-6 px-12 border-t border-[#eaf6f8]">
             <div className="max-w-6xl mx-auto grid grid-cols-3 gap-8">
@@ -32,6 +50,19 @@ export default function Footer() {
                                 </svg>
                             </button>
                         ))}
+                        {/* Map button — shows only when maps_url is available */}
+                        {mapsUrl && (
+                            <button
+                                onClick={() => window.open(mapsUrl, '_blank')}
+                                title="ดูตำแหน่งร้านบน Google Maps"
+                                className="group w-9 h-9 rounded-xl border border-[#eaf6f8] flex items-center justify-center text-[#7eb6c5] hover:text-[#06B6D4] hover:border-[#06B6D4] hover:bg-[#06B6D4]/10 hover:scale-110 active:scale-95 transition-all duration-200"
+                            >
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                                    <circle cx="12" cy="10" r="3" />
+                                </svg>
+                            </button>
+                        )}
                     </div>
                 </div>
 

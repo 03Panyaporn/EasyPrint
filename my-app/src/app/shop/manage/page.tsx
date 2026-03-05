@@ -1,15 +1,22 @@
 "use client"
 
-import { useState } from "react"
-import { Search, Info, UploadCloud, MapPin, AlertCircle, Save, User } from "lucide-react"
+import { useState, useEffect } from "react"
+import { Search, Info, UploadCloud, MapPin, AlertCircle, Save, User, Loader2, Check } from "lucide-react"
+import { supabase } from "@/lib/supabase"
 
 export default function ManageShopPage() {
+    const [isLoading, setIsLoading] = useState(true)
+    const [isSaving, setIsSaving] = useState(false)
+    const [showSuccess, setShowSuccess] = useState(false)
+    const [shopId, setShopId] = useState<string | null>(null)
     const [shopStatus, setShopStatus] = useState(true)
 
     const [basicInfo, setBasicInfo] = useState({
-        name: "EASYPRINT",
-        phone: "089-8888-251",
-        address: "112 หมู่ 2 ตำบล ท่าเรือ อำเภอ เมือง จังหวัด นครศรีธรรมราช 80000"
+        name: "",
+        phone: "",
+        address: "",
+        description: "",
+        maps_url: ""
     })
 
     const days = ["จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์", "อาทิตย์"]
@@ -17,11 +24,90 @@ export default function ManageShopPage() {
     const [schedule, setSchedule] = useState(
         days.map(day => ({
             day,
-            isOpen: day !== "อาทิตย์",
+            isOpen: true,
             openTime: "08:00",
             closeTime: "18:00",
         }))
     )
+
+    useEffect(() => {
+        const fetchShop = async () => {
+            setIsLoading(true)
+            try {
+                const targetId = "b9652bb2-cba5-4440-9d89-0f93f598cb67"
+
+                const { data, error } = await supabase
+                    .from('shops')
+                    .select('*')
+                    .eq('id', targetId)
+                    .single()
+
+                if (error) throw error
+
+                if (data) {
+                    setShopId(data.id)
+                    setShopStatus(data.is_open ?? true)
+                    setBasicInfo({
+                        name: data.name || "",
+                        phone: data.phone || "",
+                        address: data.address || "",
+                        description: data.description || "",
+                        maps_url: data.maps_url || ""
+                    })
+
+                    if (data.open_hours) {
+                        setSchedule(data.open_hours)
+                    }
+                }
+            } catch (error: any) {
+                console.error("Error fetching shop data:", error)
+                alert("ไม่สามารถดึงข้อมูลร้านค้าได้: " + error.message)
+            } finally {
+                setIsLoading(false)
+            }
+        }
+
+        fetchShop()
+    }, [])
+
+    const handleSave = async () => {
+        if (!shopId) {
+            alert("กรุณารีโหลดหน้าเว็บ")
+            return
+        }
+
+        setIsSaving(true)
+        try {
+            console.log("Attempting to save data for shopId:", shopId)
+
+            const { error } = await supabase
+                .from('shops')
+                .update({
+                    name: basicInfo.name,
+                    phone: basicInfo.phone,
+                    address: basicInfo.address,
+                    description: basicInfo.description,
+                    maps_url: basicInfo.maps_url,
+                    is_open: shopStatus,
+                    open_hours: schedule
+                })
+                .eq('id', shopId)
+
+            if (error) throw error
+
+
+            setShowSuccess(true)
+            setTimeout(() => {
+                setShowSuccess(false)
+            }, 1500)
+
+        } catch (error: any) {
+            console.error("Save error:", error)
+            alert("เกิดข้อผิดพลาดในการบันทึก: " + (error.message))
+        } finally {
+            setIsSaving(false)
+        }
+    }
 
     const handleScheduleToggle = (index: number) => {
         const newSchedule = [...schedule]
@@ -39,6 +125,15 @@ export default function ManageShopPage() {
         })))
     }
 
+    if (isLoading) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-screen bg-[#F8FAFC]">
+                <Loader2 className="w-10 h-10 text-[#06B6D4] animate-spin mb-4" />
+                <p className="text-gray-500 font-medium">กำลังโหลดข้อมูลร้านค้า...</p>
+            </div>
+        )
+    }
+
     return (
         <div className="p-8 pb-16 bg-[#F8FAFC] min-h-screen">
             {/* Header */}
@@ -52,7 +147,7 @@ export default function ManageShopPage() {
                     <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-2xl border border-[#e5e7eb] shadow-sm">
                         <div className="flex flex-col text-right">
                             <span className="text-xs font-medium text-[#90a4ae]">สถานะร้านค้า</span>
-                            <span className={`text-sm font-bold ${shopStatus ? 'text-emerald-500' : 'text-gray-400'}`}>
+                            <span className={`text-sm font-bold ${shopStatus ? 'text-emerald-500' : 'text-rose-400'}`}>
                                 {shopStatus ? 'เปิดร้านค้า' : 'ปิดร้านค้า'}
                             </span>
                         </div>
@@ -61,8 +156,8 @@ export default function ManageShopPage() {
 
                     <div className="flex items-center gap-4 px-2 border-l border-[#e5e7eb] pl-6">
                         <div className="text-right">
-                            <p className="text-sm font-semibold text-[#455a64]">Shop EasyPrint</p>
-                            <p className="text-[11px] font-medium text-gray-400">Test User</p>
+                            <p className="text-sm font-semibold text-[#455a64]">{basicInfo.name || "Shop EasyPrint"}</p>
+                            <p className="text-[11px] font-medium text-gray-400">เจ้าของร้าน</p>
                         </div>
                         <div className="w-10 h-10 rounded-full bg-[#06B6D4] flex items-center justify-center text-white shadow-md">
                             <User size={20} />
@@ -88,6 +183,7 @@ export default function ManageShopPage() {
                                         value={basicInfo.name}
                                         onChange={(e) => setBasicInfo({ ...basicInfo, name: e.target.value })}
                                         className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-[13px] focus:outline-none focus:ring-2 focus:ring-[#06B6D4]/30 focus:border-[#06B6D4] transition-all text-gray-700 font-medium"
+                                        placeholder="ระบุชื่อร้าน"
                                     />
                                 </div>
                                 <div>
@@ -97,8 +193,19 @@ export default function ManageShopPage() {
                                         value={basicInfo.phone}
                                         onChange={(e) => setBasicInfo({ ...basicInfo, phone: e.target.value })}
                                         className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-[13px] focus:outline-none focus:ring-2 focus:ring-[#06B6D4]/30 focus:border-[#06B6D4] transition-all text-gray-700 font-medium"
+                                        placeholder="08X-XXX-XXXX"
                                     />
                                 </div>
+                            </div>
+                            <div className="mb-5">
+                                <label className="block text-[13px] font-medium text-gray-600 mb-2">คำอธิบายร้านค้า</label>
+                                <textarea
+                                    value={basicInfo.description}
+                                    onChange={(e) => setBasicInfo({ ...basicInfo, description: e.target.value })}
+                                    rows={3}
+                                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-[13px] focus:outline-none focus:ring-2 focus:ring-[#06B6D4]/30 focus:border-[#06B6D4] transition-all text-gray-700 font-medium resize-none"
+                                    placeholder="เล่ารายละเอียดเกี่ยวกับร้านค้าของคุณ..."
+                                />
                             </div>
                             <div>
                                 <label className="block text-[13px] font-medium text-gray-600 mb-2">ที่อยู่</label>
@@ -107,6 +214,7 @@ export default function ManageShopPage() {
                                     value={basicInfo.address}
                                     onChange={(e) => setBasicInfo({ ...basicInfo, address: e.target.value })}
                                     className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-[13px] focus:outline-none focus:ring-2 focus:ring-[#06B6D4]/30 focus:border-[#06B6D4] transition-all text-gray-700 font-medium"
+                                    placeholder="ระบุที่อยู่ของร้าน"
                                 />
                             </div>
                         </div>
@@ -150,17 +258,44 @@ export default function ManageShopPage() {
                         {/* Location / View Map */}
                         <div className="bg-white rounded-[14px] p-6 shadow-sm border border-gray-100 flex-1 flex flex-col">
                             <h2 className="text-[15px] font-bold text-[#1e293b] mb-4">ตำแหน่งร้านค้า</h2>
-                            <div className="flex-1 bg-gray-100 rounded-xl relative overflow-hidden border border-gray-200 min-h-[220px]">
-                                {/* Simulated Google Map Thumbnail */}
-                                <img src={`https://maps.googleapis.com/maps/api/staticmap?center=13.7563,100.5018&zoom=13&size=400x400&maptype=roadmap&markers=color:red%7C13.7563,100.5018&key=INVALID_KEY`} alt="Map" className="w-full h-full object-cover opacity-80" onError={(e) => {
-                                    // Fallback if key invalid
-                                    e.currentTarget.src = "https://images.unsplash.com/photo-1524661135-423995f22d0b?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80"
-                                }} />
-                                <div className="absolute inset-0 flex items-center justify-center">
-                                    <MapPin size={32} className="text-red-500 drop-shadow-md" />
+
+                            <div className="mb-4">
+                                <label className="block text-[12px] font-medium text-gray-600 mb-2">ลิงก์ Google Maps</label>
+                                <div className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        value={basicInfo.maps_url}
+                                        onChange={(e) => setBasicInfo({ ...basicInfo, maps_url: e.target.value })}
+                                        className="flex-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-[12px] focus:outline-none focus:ring-2 focus:ring-[#06B6D4]/30 focus:border-[#06B6D4] transition-all text-gray-700 font-medium"
+                                        placeholder="แปะลิงก์จาก Google Maps ที่นี่"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => basicInfo.maps_url && window.open(basicInfo.maps_url, '_blank')}
+                                        disabled={!basicInfo.maps_url}
+                                        className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-xl text-[12px] font-bold transition-all disabled:opacity-50"
+                                    >
+                                        เปิดดู
+                                    </button>
                                 </div>
                             </div>
-                            <p className="text-[11px] text-center text-gray-400 mt-3 hover:text-[#06B6D4] cursor-pointer transition-colors">ลากหมุดเพื่อปรับตำแหน่งโลเคชัน</p>
+                            <div className="flex-1 bg-gray-50 rounded-xl relative overflow-hidden border border-gray-100 min-h-[200px]">
+                                {basicInfo.address || basicInfo.name ? (
+                                    <iframe
+                                        width="100%"
+                                        height="100%"
+                                        style={{ border: 0 }}
+                                        src={`https://maps.google.com/maps?q=${encodeURIComponent(basicInfo.address || basicInfo.name)}&t=&z=17&ie=UTF8&iwloc=&output=embed`}
+                                        allowFullScreen
+                                        loading="lazy"
+                                    ></iframe>
+                                ) : (
+                                    <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-400 p-4">
+                                        <MapPin size={32} className="mb-2 opacity-20" />
+                                        <p className="text-[11px] font-medium text-center">กรอกชื่อร้านหรือที่อยู่<br />เพื่อแสดงพิกัดบนแผนที่</p>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -258,13 +393,48 @@ export default function ManageShopPage() {
 
                 {/* Save Button */}
                 <div className="flex justify-end pt-4 mb-4">
-                    <button className="bg-[#06B6D4] hover:bg-[#0891b2] text-white px-8 py-3 rounded-xl text-sm font-bold flex items-center gap-2 transition-all shadow-md shadow-[#06B6D4]/20 hover:shadow-lg hover:shadow-[#06B6D4]/30 hover:-translate-y-0.5">
-                        <Save size={18} strokeWidth={2.5} />
-                        บันทึกการเปลี่ยนแปลง
+                    <button
+                        onClick={handleSave}
+                        disabled={isSaving}
+                        className="bg-[#06B6D4] hover:bg-[#0891b2] text-white px-8 py-3 rounded-xl text-sm font-bold flex items-center gap-2 transition-all shadow-md shadow-[#06B6D4]/20 hover:shadow-lg hover:shadow-[#06B6D4]/30 hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        {isSaving ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                            <Save size={18} strokeWidth={2.5} />
+                        )}
+                        {isSaving ? "กำลังบันทึก..." : "บันทึกการเปลี่ยนแปลง"}
                     </button>
                 </div>
 
-            </div>
+            </div >
+
+            {/* Processing / Success Modal */}
+            {
+                (isSaving || showSuccess) && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-in fade-in duration-300">
+                        <div className="bg-white w-full max-w-[320px] rounded-[32px] p-8 shadow-2xl text-center animate-in zoom-in-95 duration-300">
+                            {isSaving ? (
+                                <>
+                                    <div className="w-16 h-16 bg-[#E0F7FA] rounded-full flex items-center justify-center mx-auto mb-4">
+                                        <Loader2 className="w-10 h-10 text-[#06B6D4] animate-spin" />
+                                    </div>
+                                    <h3 className="text-xl font-bold text-[#455a64]">กำลังบันทึก...</h3>
+                                    <p className="text-sm text-[#90a4ae] mt-1">กรุณารอสักครู่ ระบบกำลังอัปเดตข้อมูล</p>
+                                </>
+                            ) : (
+                                <>
+                                    <div className="w-16 h-16 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                                        <Check size={40} strokeWidth={3} />
+                                    </div>
+                                    <h3 className="text-xl font-bold text-[#455a64]">บันทึกสำเร็จ!</h3>
+                                    <p className="text-sm text-[#90a4ae] mt-1">ข้อมูลร้านค้าของคุณอัปเดตเรียบร้อยแล้ว</p>
+                                </>
+                            )}
+                        </div>
+                    </div>
+                )
+            }
         </div >
     )
 }
@@ -273,7 +443,7 @@ function Toggle({ active, onChange }: { active: boolean; onChange: () => void })
     return (
         <button
             type="button"
-            className={`w-[42px] h-[24px] rounded-full relative transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#10b981]/30 ${active ? 'bg-[#10b981]' : 'bg-gray-200'}`}
+            className={`w-[42px] h-[24px] rounded-full relative transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#10b981]/30 ${active ? 'bg-[#10b981]' : 'bg-rose-400'}`}
             onClick={onChange}
         >
             <div className={`w-4 h-4 rounded-full bg-white absolute top-[4px] transition-transform duration-300 shadow-sm ${active ? 'translate-x-[22px]' : 'translate-x-[4px]'}`} />
