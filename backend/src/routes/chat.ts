@@ -3,17 +3,74 @@ import { supabase } from '../lib/supabase.js'
 
 export const chatRoute = new Hono()
 
+// ==========================================
+// POST /api/chat/upload — อัปโหลดไฟล์ไปยัง Supabase Storage
+// ==========================================
+chatRoute.post('/upload', async (c) => {
+    try {
+        const formData = await c.req.formData()
+        const file = formData.get('file') as File
+
+        if (!file) {
+            return c.json({ error: 'No file provided' }, 400)
+        }
+
+        const fileExt = file.name.split('.').pop()
+        const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${fileExt}`
+        const filePath = `chat/${fileName}`
+
+        const arrayBuffer = await file.arrayBuffer()
+        const buffer = new Uint8Array(arrayBuffer)
+
+        const { error: uploadError } = await supabase.storage
+            .from('chat-files')
+            .upload(filePath, buffer, {
+                contentType: file.type,
+                upsert: false,
+            })
+
+        if (uploadError) {
+            console.error('Upload error:', uploadError)
+            return c.json({ error: uploadError.message }, 400)
+        }
+
+        const { data: publicUrlData } = supabase.storage
+            .from('chat-files')
+            .getPublicUrl(filePath)
+
+        return c.json({
+            url: publicUrlData.publicUrl,
+            name: file.name,
+            type: file.type,
+        })
+    } catch (err: any) {
+        console.error('Unexpected error in upload:', err)
+        return c.json({ error: 'Internal Server Error' }, 500)
+    }
+})
+
 chatRoute.post('/send-message', async (c) => {
     try {
-        const { content, sender_type, room_id } = await c.req.json()
+        const { content, sender_type, room_id, file_url, file_name, file_type } = await c.req.json()
 
-        if (!content || !sender_type || !room_id) {
-            return c.json({ error: 'Missing required fields: content, sender_type, or room_id' }, 400)
+        if (!sender_type || !room_id) {
+            return c.json({ error: 'Missing required fields: sender_type, or room_id' }, 400)
+        }
+        if (!content && !file_url) {
+            return c.json({ error: 'Must provide either content or a file' }, 400)
+        }
+
+        const insertData: any = { sender_type, room_id, is_read: false }
+        if (content) insertData.content = content
+        if (file_url) {
+            insertData.file_url = file_url
+            insertData.file_name = file_name
+            insertData.file_type = file_type
         }
 
         const { data, error } = await supabase
             .from('messages')
-            .insert([{ content, sender_type, room_id, is_read: false }])
+            .insert([insertData])
             .select()
 
         if (error) {
@@ -23,24 +80,23 @@ chatRoute.post('/send-message', async (c) => {
 
         // --- Update Chat Room Metadata via Atomic RPC ---
         const isCustomerSender = sender_type === 'customer'
+        const lastMessageText = file_url
+            ? (file_type?.startsWith('image/') ? '📷 รูปภาพ' : `📎 ${file_name || 'ไฟล์แนบ'}`)
+            : content
 
-        // If customer sends, increment unread for merchant. If merchant sends, increment for customer.
         const { error: rpcError } = await supabase.rpc('increment_unread_count', {
             room_id: room_id,
-            is_customer: !isCustomerSender // If sender is merchant, we increment for customer
+            is_customer: !isCustomerSender
         })
 
         if (rpcError) {
             console.error('Error calling atomic increment RPC:', rpcError)
-            // Fallback to manual update if RPC fails
-            const updateData: any = {
-                last_message: content,
+            await supabase.from('chat_rooms').update({
+                last_message: lastMessageText,
                 updated_at: new Date().toISOString()
-            }
-            await supabase.from('chat_rooms').update(updateData).eq('id', room_id)
+            }).eq('id', room_id)
         } else {
-            // Update last message even if RPC succeeds (RPC only handles counters and timestamp)
-            await supabase.from('chat_rooms').update({ last_message: content }).eq('id', room_id)
+            await supabase.from('chat_rooms').update({ last_message: lastMessageText }).eq('id', room_id)
         }
 
         return c.json(data[0])
@@ -49,6 +105,7 @@ chatRoute.post('/send-message', async (c) => {
         return c.json({ error: 'Internal Server Error' }, 500)
     }
 })
+
 
 chatRoute.get('/history/:room_id', async (c) => {
     const room_id = c.req.param('room_id')

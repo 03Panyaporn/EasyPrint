@@ -83,17 +83,17 @@ export default function ShopInboxPage() {
     )
 
     return (
-        <div className="p-10 max-w-6xl mx-auto min-h-screen bg-gray-50/30">
+        <div className="p-8 max-w-3xl mx-auto min-h-screen bg-gray-50/30">
             {/* Header Section */}
             <div className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
                 <div>
                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-50 text-cyan-600 text-[10px] font-bold tracking-widest uppercase mb-3 border border-cyan-100">
                         Chat Center
                     </div>
-                    <h1 className="text-4xl font-black text-gray-900 tracking-tight">
+                    <h1 className="text-2xl font-black text-gray-900 tracking-tight">
                         กล่องข้อความ <span className="text-cyan-500">Inbox</span>
                     </h1>
-                    <p className="text-gray-500 text-base mt-2 font-medium">
+                    <p className="text-gray-500 text-sm mt-1 font-medium">
                         ตอบกลับลูกค้าและจัดการการสนทนาทั้งหมดในที่เดียว
                     </p>
                 </div>
@@ -104,7 +104,7 @@ export default function ShopInboxPage() {
                         placeholder="ค้นหาชื่อลูกค้า หรืออีเมล..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full md:w-80 pl-12 pr-6 py-4 bg-white border-0 rounded-[20px] text-sm shadow-[0_10px_30px_rgba(0,0,0,0.04)] focus:outline-none focus:ring-2 focus:ring-cyan-500/10 transition-all placeholder:text-gray-400 font-medium"
+                        className="w-full md:w-64 pl-10 pr-4 py-3 bg-white border-0 rounded-[16px] text-sm shadow-[0_10px_30px_rgba(0,0,0,0.04)] focus:outline-none focus:ring-2 focus:ring-cyan-500/10 transition-all placeholder:text-gray-400 font-medium"
                     />
                 </div>
             </div>
@@ -125,7 +125,7 @@ export default function ShopInboxPage() {
                     </p>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="flex flex-col gap-4">
                     {filteredRooms.map((room) => {
                         const name = room.customer?.raw_user_meta_data?.name || room.customer?.email || `ลูกค้า #${room.customer_id.slice(0, 8)}`;
                         const firstChar = (name[0] || '?').toUpperCase();
@@ -134,36 +134,36 @@ export default function ShopInboxPage() {
                             <Link
                                 key={room.id}
                                 href={`/shop/chat/${room.id}`}
-                                className="group bg-white p-6 rounded-[32px] border border-transparent shadow-[0_10px_30px_rgba(0,0,0,0.02)] hover:shadow-[0_20px_60px_rgba(0,0,0,0.06)] hover:border-cyan-500/10 hover:-translate-y-1 transition-all duration-300 flex items-center justify-between relative overflow-hidden"
+                                className="group bg-white px-5 py-4 rounded-[20px] border border-transparent shadow-[0_4px_16px_rgba(0,0,0,0.03)] hover:shadow-[0_10px_30px_rgba(0,0,0,0.06)] hover:border-cyan-500/10 hover:-translate-y-0.5 transition-all duration-300 flex items-center justify-between relative overflow-hidden"
                             >
                                 {/* Decorative Gradient */}
                                 <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-50/30 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity" />
 
-                                <div className="flex items-center gap-5 relative z-10 w-full overflow-hidden">
-                                    <div className="shrink-0 w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-50 to-blue-50 flex items-center justify-center text-cyan-600 font-black text-xl shadow-inner border border-cyan-100/50 transform group-hover:rotate-6 transition-transform">
+                                <div className="flex items-center gap-3 relative z-10 w-full overflow-hidden">
+                                    <div className="shrink-0 w-11 h-11 rounded-xl bg-gradient-to-br from-cyan-50 to-blue-50 flex items-center justify-center text-cyan-600 font-black text-base shadow-inner border border-cyan-100/50 group-hover:rotate-6 transition-transform">
                                         {firstChar}
                                     </div>
                                     <div className="flex-1 overflow-hidden">
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <h3 className="font-black text-gray-800 text-lg truncate group-hover:text-cyan-600 transition-colors">
+                                        <div className="flex items-center gap-2 mb-0.5">
+                                            <h3 className="font-bold text-gray-800 text-sm truncate group-hover:text-cyan-600 transition-colors">
                                                 {name}
                                             </h3>
                                             {room.unread_count > 0 && (
-                                                <span className="flex items-center justify-center h-5 px-2 bg-rose-500 text-white text-[10px] font-black rounded-full animate-pulse shadow-lg shadow-rose-200">
-                                                    {room.unread_count} ข้อความใหม่
+                                                <span className="flex items-center justify-center h-4 px-1.5 bg-rose-500 text-white text-[9px] font-black rounded-full shadow-sm">
+                                                    {room.unread_count}
                                                 </span>
                                             )}
                                         </div>
-                                        <p className="text-sm text-gray-500 truncate font-medium flex items-center gap-1.5 min-w-0">
+                                        <p className="text-xs text-gray-400 truncate font-medium flex items-center gap-1 min-w-0">
                                             {room.last_message ? (
                                                 <span className="truncate">{room.last_message}</span>
                                             ) : (
                                                 <span className="italic">ยังไม่มีข้อความ</span>
                                             )}
                                         </p>
-                                        <div className="flex items-center gap-3 mt-3">
-                                            <span className="flex items-center gap-1.5 text-[11px] font-bold text-gray-400 bg-gray-50 px-2 rounded-lg py-1">
-                                                <Clock size={12} className="text-cyan-500" />
+                                        <div className="flex items-center gap-2 mt-1.5">
+                                            <span className="flex items-center gap-1 text-[10px] font-bold text-gray-400">
+                                                <Clock size={10} className="text-cyan-400" />
                                                 {new Date(room.updated_at).toLocaleDateString('th-TH', {
                                                     day: '2-digit',
                                                     month: 'short',
@@ -174,8 +174,8 @@ export default function ShopInboxPage() {
                                         </div>
                                     </div>
                                 </div>
-                                <div className="shrink-0 ml-4 w-12 h-12 rounded-2xl bg-gray-50 flex items-center justify-center text-gray-300 group-hover:bg-cyan-500 group-hover:text-white group-hover:shadow-lg group-hover:shadow-cyan-200 transition-all duration-300 transform group-hover:rotate-12">
-                                    <ChevronRight size={22} />
+                                <div className="shrink-0 ml-3 w-8 h-8 rounded-xl bg-gray-50 flex items-center justify-center text-gray-300 group-hover:bg-cyan-500 group-hover:text-white transition-all duration-300">
+                                    <ChevronRight size={16} />
                                 </div>
                             </Link>
                         )
