@@ -71,7 +71,7 @@ export default function ChatWindow({ roomId: initialRoomId, senderType, title: i
     // Fetch rooms for the sidebar
     const fetchRooms = async () => {
         try {
-            const user = JSON.parse(localStorage.getItem('user') || '{}')
+            const user = JSON.parse(sessionStorage.getItem('user') || '{}')
             if (!user.id) return
 
             const url = senderType === 'merchant'
@@ -208,7 +208,7 @@ export default function ChatWindow({ roomId: initialRoomId, senderType, title: i
         e.preventDefault()
         if (!newMessage.trim() && !selectedFile || isSending) return
 
-        const user = JSON.parse(localStorage.getItem('user') || '{}')
+        const user = JSON.parse(sessionStorage.getItem('user') || '{}')
         if (!user.id) return
 
         setIsSending(true)

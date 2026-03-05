@@ -274,7 +274,7 @@ export default function TrackingPage() {
     const fetchOrders = async () => {
         setIsLoading(true);
         try {
-            const userJson = localStorage.getItem('user');
+            const userJson = sessionStorage.getItem('user');
             const user = userJson ? JSON.parse(userJson) : null;
             if (!user?.id) return;
 
@@ -332,8 +332,8 @@ export default function TrackingPage() {
     const handleStartChat = async () => {
         setLoadingChat(true)
         try {
-            const user = JSON.parse(localStorage.getItem('user') || '{}')
-            const res = await fetch('http://localhost:3001/api/chat/get-or-create-room', {
+            const user = JSON.parse(sessionStorage.getItem('user') || '{}')
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/chat/get-or-create-room`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

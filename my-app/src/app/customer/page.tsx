@@ -10,13 +10,13 @@ export default function CustomerHome() {
     const handleStartChat = async () => {
         setLoadingChat(true)
         try {
-            const user = JSON.parse(localStorage.getItem('user') || '{}')
+            const user = JSON.parse(sessionStorage.getItem('user') || '{}')
             // ในระบบจริงต้องมีวิธีหา merchant_id ที่ต้องการคุยด้วย
             // เบื้องต้นขอใช้ค่าคงที่ หรือค้นหาจาก merchant account แรกในระบบ
             // สมมติว่ามี Merchant ID หนึ่งที่คอยดูแลระบบ (เช่น Admin หรือ Shop หลัก)
             // สำหรับการทดสอบนี้ ผมจะใช้วิธีเรียก API ค้นหา merchant หรือแสดง Error ถ้าไม่พบ
 
-            const res = await fetch('http://localhost:3001/api/chat/get-or-create-room', {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/chat/get-or-create-room`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

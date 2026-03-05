@@ -1,7 +1,8 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import Link from "next/link"
+import { useAuth } from "@/context/AuthContext"
 
 // ─────────────────────────────────────────────
 // Auth Modal Component
@@ -22,6 +23,7 @@ function AuthModal({
   const [error, setError] = useState("")
   const [success, setSuccess] = useState("")
   const [loading, setLoading] = useState(false)
+  const { login: authLogin } = useAuth()
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -29,10 +31,11 @@ function AuthModal({
     setLoading(true)
 
     try {
-      const res = await fetch("http://localhost:3001/api/auth/login", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
+        credentials: "include", // สำคัญ: เพื่อให้เบราว์เซอร์รับและเซ็ต HttpOnly Cookie
       })
       const data = await res.json()
 
@@ -41,11 +44,8 @@ function AuthModal({
         return
       }
 
-      localStorage.setItem("access_token", data.session.access_token)
-      localStorage.setItem("refresh_token", data.session.refresh_token)
-      localStorage.setItem("user", JSON.stringify(data.user))
-      document.cookie = `access_token=${data.session.access_token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`
-      document.cookie = `user_role=${data.user.role || 'customer'}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`
+      // ใช้ฟังก์ชัน login จาก AuthContext เพื่อความคงเส้นคงวาของข้อมูล
+      authLogin(data.user, data.session)
 
       // Redirect ตามบทบาท (Role)
       if (data.user.role === 'merchant') {
@@ -78,10 +78,11 @@ function AuthModal({
     }
 
     try {
-      const res = await fetch("http://localhost:3001/api/auth/register", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password, name }),
+        credentials: "include",
       })
       const data = await res.json()
 
@@ -327,10 +328,11 @@ export default function Home() {
   // ถ้า Login อยู่แล้ว ให้ Redirect ไปหน้า Dashboard ของตัวเองทันที
   // เพื่อป้องกันความสับสนระหว่างหน้า Landing และหน้าใช้งานจริง
   useEffect(() => {
-    const userStr = localStorage.getItem('user')
-    const token = document.cookie.split('; ').find(row => row.startsWith('access_token='))
+    const userStr = sessionStorage.getItem('user')
+    // ตรวจสอบ access_token จากคุกกี้ (ถ้ามี)
+    const hasToken = document.cookie.includes('access_token=')
 
-    if (userStr && token) {
+    if (userStr && hasToken) {
       try {
         const user = JSON.parse(userStr)
         if (user.role === 'merchant') {
