@@ -329,7 +329,7 @@ export default function TrackingPage() {
         }
     };
 
-    const handleStartChat = async () => {
+    const handleStartChat = async (orderId: string, price: number) => {
         setLoadingChat(true)
         try {
             const user = JSON.parse(localStorage.getItem('user') || '{}')
@@ -343,7 +343,8 @@ export default function TrackingPage() {
             })
             const roomData = await res.json()
             if (res.ok && roomData.id) {
-                window.location.href = `/customer/chat/${roomData.id}`
+                const messageText = encodeURIComponent(`สวัสดีครับคุณร้านค้า ต้องการสอบถามหรือแจ้งขอยกเลิกและคืนเงินสำหรับ\nหมายเลขออเดอร์: ${orderId}\nราคา: ฿${price.toFixed(2)}`);
+                window.location.href = `/customer/chat/${roomData.id}?message=${messageText}`;
             } else {
                 const errorMsg = roomData.details || roomData.error || "ไม่สามารถเริ่มการสนทนาได้"
                 alert(`เกิดข้อผิดพลาด: ${errorMsg}\n\nคำแนะนำ: ${roomData.hint || 'กรุณาตรวจสอบรหัสร้านค้า'}`)
@@ -509,7 +510,11 @@ export default function TrackingPage() {
                                                         {order.id}
                                                     </span>
                                                 </td>
-                                                <td className="py-4 px-4 text-center text-gray-700 font-medium">{order.product}</td>
+                                                <td className="py-4 px-4 text-center text-gray-700 font-medium">
+                                                    <div className="truncate max-w-[180px] sm:max-w-[250px] md:max-w-[350px] mx-auto" title={order.product}>
+                                                        {order.product}
+                                                    </div>
+                                                </td>
                                                 <td className="py-4 px-4 text-center">
                                                     <span className="text-gray-700 font-semibold bg-gray-100 w-8 h-8 inline-flex items-center justify-center rounded-lg">
                                                         {order.quantity}
@@ -540,7 +545,7 @@ export default function TrackingPage() {
                                                         </button>
                                                     ) : order.status === "ยกเลิก" ? (
                                                         <button
-                                                            onClick={(e) => { e.stopPropagation(); handleStartChat(); }}
+                                                            onClick={(e) => { e.stopPropagation(); handleStartChat(order.id, order.price); }}
                                                             disabled={loadingChat}
                                                             className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-[#06B6D4] to-[#0891b2] text-white text-xs font-semibold hover:shadow-md hover:shadow-[#06B6D4]/30 active:scale-95 transition-all duration-200 disabled:opacity-50"
                                                         >
@@ -591,10 +596,8 @@ export default function TrackingPage() {
             {cancellingOrder && (
                 <CancelModal
                     order={cancellingOrder}
-                    onCancel={async () => {
-                        await handleCancelOrder(cancellingOrder.id, cancellingOrder.realId);
-                    }}
-                    onChat={handleStartChat}
+                    onCancel={() => handleCancelOrder(cancellingOrder.id, cancellingOrder.realId)}
+                    onChat={() => handleStartChat(cancellingOrder.id, cancellingOrder.price)}
                     onClose={() => setCancellingOrder(null)}
                 />
             )}
