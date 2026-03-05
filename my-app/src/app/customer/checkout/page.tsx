@@ -186,20 +186,42 @@ export default function CheckoutPage() {
 
             if (orderError) throw orderError;
 
-            // 3. Insert all items into order_items table
-            const orderItemsInsertData = selectedItems.map(item => ({
-                order_id: orderData.id,
-                // service_id: item.serviceId, // Will be added later if needed
-                file_name: item.fileName,
-                file_url: item.fileUrl,
-                document_type: item.documentType,
-                document_detail: item.documentDetail,
-                document_size: item.documentSize,
-                extra_option: item.extraOption,
-                page_count: item.pageCount,
-                quantity: item.quantity,
-                unit_price: item.totalPrice / item.quantity,
-                total_price: item.totalPrice
+            // 3. Upload all document files and get their public URLs
+            const orderItemsInsertData = await Promise.all(selectedItems.map(async (item) => {
+                let finalFileUrl = item.fileUrl; // fallback
+
+                if (item.file) {
+                    const docExt = item.file.name.split('.').pop();
+                    const docFileName = `doc_${Date.now()}_${Math.random().toString(36).substring(7)}.${docExt}`;
+                    const docFilePath = `receipts/${docFileName}`;
+
+                    const { error: docUploadError } = await supabase.storage
+                        .from('slips') // reusing the 'slips' bucket for simplicity as it likely has public access
+                        .upload(docFilePath, item.file);
+
+                    if (!docUploadError) {
+                        const { data: { publicUrl: docPublicUrl } } = supabase.storage
+                            .from('slips')
+                            .getPublicUrl(docFilePath);
+                        finalFileUrl = docPublicUrl;
+                    } else {
+                        console.error(`Error uploading ${item.fileName}:`, docUploadError);
+                    }
+                }
+
+                return {
+                    order_id: orderData.id,
+                    file_name: item.fileName,
+                    file_url: finalFileUrl,
+                    document_type: item.documentType,
+                    document_detail: item.documentDetail,
+                    document_size: item.documentSize,
+                    extra_option: item.extraOption,
+                    page_count: item.pageCount,
+                    quantity: item.quantity,
+                    unit_price: item.totalPrice / item.quantity,
+                    total_price: item.totalPrice
+                };
             }));
 
             const { error: itemsError } = await supabase

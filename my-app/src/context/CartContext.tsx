@@ -6,6 +6,7 @@ export interface CartItem {
     id: string;
     fileName: string;
     fileUrl?: string;          // blob URL for preview in checkout
+    file?: File;                // actual File object for uploading at checkout
     documentType: string;
     documentDetail: string;
     documentSize: string;

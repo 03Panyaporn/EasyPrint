@@ -21,6 +21,7 @@ import {
     X,
     MessageSquare,
 } from "lucide-react"
+import { supabase } from "@/lib/supabase"
 
 const statsCards = [
     {
@@ -121,6 +122,17 @@ const recentOrders = [
     },
 ]
 
+const getStatusInfo = (status: string) => {
+    switch (status) {
+        case "รอตรวจสอบสลิป": return { statusColor: "bg-[#FFF9C4] text-[#F9A825]", progress: 10, progressBarColor: "bg-[#06B6D4]" };
+        case "กำลังดำเนินการ": return { statusColor: "bg-[#E0F7FA] text-[#06B6D4]", progress: 40, progressBarColor: "bg-[#06B6D4]" };
+        case "เสร็จรอรับ": return { statusColor: "bg-[#E8F5E9] text-[#4CAF50]", progress: 80, progressBarColor: "bg-[#06B6D4]" };
+        case "รับแล้ว": return { statusColor: "bg-[#F5F5F5] text-[#9E9E9E]", progress: 100, progressBarColor: "bg-[#06B6D4]" };
+        case "ยกเลิก": return { statusColor: "bg-[#FCE4EC] text-[#E91E63]", progress: 0, progressBarColor: "bg-gray-200" };
+        default: return { statusColor: "bg-gray-100 text-gray-500", progress: 0, progressBarColor: "bg-gray-200" };
+    }
+}
+
 const topServices = [
     { name: "ถ่ายเอกสารขาวดำ", count: 120, percentage: 85, color: "bg-[#06B6D4]" },
     { name: "ถ่ายเอกสารสี", count: 98, percentage: 70, color: "bg-[#38bdf8]" },
@@ -129,10 +141,9 @@ const topServices = [
     { name: "นามบัตร", count: 35, percentage: 25, color: "bg-[#cffafe]" },
 ]
 
-function RevenueChart() {
-    const data = [1200, 2800, 1800, 3200, 2400, 4100, 5000]
-    const labels = ["จ.", "อ.", "พ.", "พฤ.", "ศ.", "ส.", "อา."]
-    const max = Math.max(...data)
+function RevenueChart({ data, labels }: { data: number[], labels: string[] }) {
+    if (!data || data.length === 0) return null;
+    const max = Math.max(...data, 100)
     const height = 140
     const width = 500
 
@@ -209,7 +220,7 @@ export default function ShopDashboard() {
     const [userName, setUserName] = useState("ร้านค้า")
     const [filterPeriod, setFilterPeriod] = useState("Last 7 Days")
     const [isShopOpen, setIsShopOpen] = useState(true)
-    const [orders, setOrders] = useState(recentOrders)
+    const [orders, setOrders] = useState<any[]>([])
 
     // Modal states
     const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false)
@@ -218,6 +229,7 @@ export default function ShopDashboard() {
     const [isPrintModalOpen, setIsPrintModalOpen] = useState(false)
     const [isCancelConfirmOpen, setIsCancelConfirmOpen] = useState(false)
     const [selectedOrder, setSelectedOrder] = useState<any>(null)
+    const [previewFile, setPreviewFile] = useState<{ url: string, name: string } | null>(null)
 
     const openUpdateModal = (order: any) => {
         setSelectedOrder(order)
@@ -304,7 +316,138 @@ export default function ShopDashboard() {
                 setUserName(parsed.name || parsed.email || "ร้านค้า")
             }
         } catch { }
+
+        fetchOrders();
+
+        const channel = supabase.channel('dashboard-orders-realtime')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
+                fetchOrders();
+            })
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
     }, [])
+
+    const fetchOrders = async () => {
+        try {
+            const { data, error } = await supabase
+                .from('orders')
+                .select(`
+                    id, 
+                    created_at, 
+                    total_price, 
+                    status, 
+                    payment_slip_url,
+                    order_items (*)
+                `)
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+            if (data) {
+                const formattedOrders = data.map(order => {
+                    const items = order.order_items || [];
+                    const firstItemName = items.length > 0 ? items[0].file_name : "ไม่มีไฟล์";
+                    const fileNameStr = items.length > 1 ? `${firstItemName} (และอีก ${items.length - 1} ไฟล์)` : firstItemName;
+
+                    const dateStr = new Date(order.created_at).toISOString().split('T')[0].replace(/-/g, '');
+                    const shortOrderCode = `ORD-${dateStr}-${order.id.split('-')[0].substring(0, 4).toUpperCase()}`;
+
+                    const statusInfo = getStatusInfo(order.status);
+
+                    return {
+                        realId: order.id,
+                        id: shortOrderCode,
+                        date: new Date(order.created_at).toLocaleDateString("th-TH", { year: "numeric", month: "short", day: "numeric" }),
+                        customer: "ลูกค้าทั่วไป",
+                        fileName: fileNameStr,
+                        price: order.total_price.toFixed(2),
+                        status: order.status,
+                        payment_slip_url: order.payment_slip_url,
+                        fileUrl: items.length > 0 ? items[0].file_url : null,
+                        items: items,
+                        ...statusInfo
+                    }
+                });
+                setOrders(formattedOrders);
+            }
+        } catch (error) {
+            console.error(error);
+        }
+    }
+
+    const todayOrders = orders.filter(o => o.date === new Date().toLocaleDateString("th-TH", { year: "numeric", month: "short", day: "numeric" }));
+    const todayRevenue = todayOrders.reduce((sum, order) => sum + parseFloat(order.price), 0);
+    const pendingOrdersCount = orders.filter(o => o.status === "กำลังดำเนินการ" || o.status === "รอตรวจสอบสลิป").length;
+
+    // 📊 Report Calculations
+    // 1. Top Services Data
+    const serviceCounts: Record<string, number> = {};
+    orders.forEach(order => {
+        order.items?.forEach((item: any) => {
+            const type = item.document_type || "อื่นๆ";
+            serviceCounts[type] = (serviceCounts[type] || 0) + 1;
+        });
+    });
+
+    const topServiceData = Object.entries(serviceCounts)
+        .map(([name, count]) => ({
+            name,
+            count,
+            percentage: Math.min(100, (count / Math.max(orders.length, 1)) * 100),
+            color: name.includes("สี") ? "bg-[#06B6D4]" : "bg-[#38bdf8]"
+        }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 5);
+
+    // 2. Revenue Chart Data (Last 7 Days)
+    const dayNames = ["อา.", "จ.", "อ.", "พ.", "พฤ.", "ศ.", "ส."];
+    const last7Days = [...Array(7)].map((_, i) => {
+        const d = new Date();
+        d.setDate(d.getDate() - (6 - i));
+        return {
+            fullDate: d.toLocaleDateString("th-TH", { year: "numeric", month: "short", day: "numeric" }),
+            label: dayNames[d.getDay()]
+        };
+    });
+
+    const revenueLabels = last7Days.map(d => d.label);
+    const revenueValueData = last7Days.map(day => {
+        return orders
+            .filter(o => o.date === day.fullDate && o.status !== "ยกเลิก")
+            .reduce((sum, o) => sum + parseFloat(o.price), 0);
+    });
+
+    const dynamicStatsCards = [
+        {
+            label: "รายได้วันนี้",
+            value: `฿ ${todayRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+            icon: DollarSign,
+            color: "from-[#E0F7FA] to-[#B2EBF2]",
+            iconColor: "text-[#06B6D4]",
+            change: "อัปเดตล่าสุด",
+            changeUp: true,
+        },
+        {
+            label: "ออเดอร์ทั้งหมด",
+            value: orders.length.toString(),
+            icon: ShoppingBag,
+            color: "from-[#FFF9C4] to-[#FFF176]",
+            iconColor: "text-[#F9A825]",
+            change: "รวมยกเลิก",
+            changeUp: true,
+        },
+        {
+            label: "ออเดอร์รอดำเนินการ",
+            value: pendingOrdersCount.toString(),
+            icon: Clock,
+            color: "from-[#F3E5F5] to-[#E1BEE7]",
+            iconColor: "text-[#AB47BC]",
+            change: "รอจัดทำ",
+            changeUp: false,
+        },
+    ]
 
     return (
         <div className="p-8">
@@ -351,7 +494,7 @@ export default function ShopDashboard() {
                 </div>
             </div>
             <div className="grid grid-cols-3 gap-6 mb-8">
-                {statsCards.map((card) => {
+                {dynamicStatsCards.map((card) => {
                     const Icon = card.icon
                     return (
                         <div
@@ -404,7 +547,7 @@ export default function ShopDashboard() {
                                 <th className="text-left px-8 py-5 text-[11px] font-bold text-[#90a4ae] uppercase tracking-wider">ลูกค้า/ไฟล์งาน</th>
                                 <th className="text-left px-8 py-5 text-[11px] font-bold text-[#90a4ae] uppercase tracking-wider">ยอดรวม</th>
                                 <th className="text-left px-8 py-5 text-[11px] font-bold text-[#90a4ae] uppercase tracking-wider">สถานะการผลิต</th>
-                                <th className="text-right px-8 py-5 text-[11px] font-bold text-[#90a4ae] uppercase tracking-wider">การจัดการ</th>
+                                <th className="text-left px-8 py-5 text-[11px] font-bold text-[#90a4ae] uppercase tracking-wider">การจัดการ</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-[#f0f4f5]">
@@ -414,9 +557,9 @@ export default function ShopDashboard() {
                                     className="hover:bg-[#fafeff] transition-colors duration-150 group"
                                 >
                                     <td className="px-8 py-6">
-                                        <div className="flex flex-col">
-                                            <span className="text-sm font-bold text-[#06B6D4] mb-0.5">{order.id}</span>
-                                            <span className="text-[11px] text-[#90a4ae]">{order.date}</span>
+                                        <div className="flex flex-col whitespace-nowrap">
+                                            <span className="text-[15px] font-bold text-[#06B6D4] mb-1">{order.id}</span>
+                                            <span className="text-[13px] text-[#90a4ae]">{order.date}</span>
                                         </div>
                                     </td>
                                     <td className="px-8 py-6">
@@ -426,17 +569,43 @@ export default function ShopDashboard() {
                                             </div>
                                             <div className="flex flex-col">
                                                 <span className="text-sm text-[#455a64] font-bold leading-tight mb-1">{order.customer}</span>
-                                                <div className="flex items-center gap-1.5 group/file cursor-pointer">
-                                                    <Download size={12} className="text-[#90a4ae] group-hover/file:text-[#06B6D4] transition-colors" />
-                                                    <span className="text-[11px] text-[#90a4ae] group-hover/file:text-[#06B6D4] transition-colors truncate max-w-[150px]">{order.fileName}</span>
-                                                </div>
+                                                {order.items && order.items.length > 1 ? (
+                                                    <button
+                                                        onClick={() => openDetailsModal(order)}
+                                                        className="flex items-center gap-1.5 opacity-60 hover:opacity-100 hover:scale-[1.02] transition-all group/items"
+                                                        title="คลิกเพื่อดูรายการไฟล์ทั้งหมด"
+                                                    >
+                                                        <div className="w-5 h-5 rounded-lg bg-[#F0F4F8] group-hover/items:bg-[#06B6D4] group-hover/items:text-white flex items-center justify-center text-[#90a4ae] border border-gray-100 transition-colors">
+                                                            <FileText size={10} />
+                                                        </div>
+                                                        <span className="text-[11px] text-[#90a4ae] group-hover/items:text-[#06B6D4] font-medium group-hover/items:font-bold underline-offset-2 hover:underline">{order.items.length} รายการ</span>
+                                                    </button>
+                                                ) : order.fileUrl ? (
+                                                    <button
+                                                        onClick={() => setPreviewFile({ url: order.fileUrl, name: order.fileName })}
+                                                        className="flex items-center gap-1.5 group/file cursor-pointer hover:scale-[1.02] transition-transform origin-left text-left"
+                                                        title="คลิกเพื่อดูไฟล์งาน"
+                                                    >
+                                                        <div className="w-5 h-5 rounded-lg bg-gray-50 flex items-center justify-center text-[#90a4ae] group-hover/file:bg-[#06B6D4] group-hover/file:text-white transition-colors shadow-sm border border-gray-100">
+                                                            <Download size={10} />
+                                                        </div>
+                                                        <span className="text-[11px] text-[#455a64] font-medium group-hover/file:text-[#06B6D4] group-hover/file:font-bold transition-all hover:underline underline-offset-2 truncate max-w-[150px]">{order.fileName}</span>
+                                                    </button>
+                                                ) : (
+                                                    <div className="flex items-center gap-1.5 text-gray-400 opacity-60">
+                                                        <div className="w-5 h-5 rounded-lg bg-gray-50 flex items-center justify-center border border-gray-100">
+                                                            <FileText size={10} />
+                                                        </div>
+                                                        <span className="text-[11px] italic truncate max-w-[150px]">{order.fileName}</span>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                     </td>
-                                    <td className="px-8 py-6">
+                                    <td className="px-8 py-8">
                                         <span className="text-sm font-black text-[#455a64]">฿{order.price}</span>
                                     </td>
-                                    <td className="px-8 py-6">
+                                    <td className="px-8 py-8">
                                         <div className="flex flex-col w-[160px]">
                                             <div className="mb-2">
                                                 <span className={`text-[10px] font-bold px-3 py-1 rounded-lg ${order.statusColor}`}>
@@ -451,8 +620,8 @@ export default function ShopDashboard() {
                                             </div>
                                         </div>
                                     </td>
-                                    <td className="px-8 py-6">
-                                        <div className="flex items-center justify-end gap-2.5">
+                                    <td className="px-8 py-8">
+                                        <div className="flex items-center justify-start gap-2.5">
                                             <div className="flex items-center gap-1">
                                                 <button onClick={() => openDetailsModal(order)} className="p-2 text-[#90a4ae] hover:bg-emerald-100 hover:text-emerald-500 rounded-xl transition-all" title="รายละเอียดออเดอร์">
                                                     <Eye size={16} />
@@ -625,37 +794,54 @@ export default function ShopDashboard() {
                                         </div>
                                     </div>
 
-                                    <div className="bg-gray-50 rounded-2xl p-5 border border-gray-100">
-                                        <p className="text-[11px] font-bold text-[#90a4ae] uppercase tracking-wider mb-3">รายละเอียดเอกสาร</p>
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm flex flex-col">
-                                                <span className="text-[10px] font-bold text-[#90a4ae] uppercase">จำนวนหน้า</span>
-                                                <span className="text-sm font-bold text-[#455a64]">42 หน้า</span>
-                                            </div>
-                                            <div className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm flex flex-col">
-                                                <span className="text-[10px] font-bold text-[#90a4ae] uppercase">ประเภทกระดาษ</span>
-                                                <span className="text-sm font-bold text-[#455a64]">A4 (80 แกรม)</span>
-                                            </div>
-                                            <div className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm flex flex-col">
-                                                <span className="text-[10px] font-bold text-[#90a4ae] uppercase">สีการพิมพ์</span>
-                                                <span className="text-sm font-bold text-[#455a64]">ขาว-ดำ</span>
-                                            </div>
-                                            <div className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm flex flex-col">
-                                                <span className="text-[10px] font-bold text-[#90a4ae] uppercase">การเข้าเล่ม</span>
-                                                <span className="text-sm font-bold text-[#455a64]">แม็กมุมซ้าย</span>
-                                            </div>
-                                        </div>
-                                    </div>
+                                    <div className="space-y-4 max-h-[50vh] overflow-y-auto pr-2 custom-scrollbar">
+                                        {selectedOrder.items?.map((item: any, index: number) => (
+                                            <div key={item.id || index} className="bg-gray-50 rounded-2xl p-5 border border-gray-100">
+                                                <div className="flex items-center gap-3 mb-4">
+                                                    <div className="w-8 h-8 bg-sky-50 text-sky-500 rounded-lg flex items-center justify-center shrink-0">
+                                                        <FileText size={16} />
+                                                    </div>
+                                                    {item.file_url ? (
+                                                        <button
+                                                            onClick={() => setPreviewFile({ url: item.file_url, name: item.file_name })}
+                                                            className="flex-1 text-sm font-bold text-[#455a64] truncate hover:text-[#06B6D4] hover:underline decoration-2 underline-offset-4 transition-all flex items-center gap-2 group/modal-file text-left"
+                                                            title={item.file_name}
+                                                        >
+                                                            <span>{item.file_name}</span>
+                                                            <Download size={14} className="opacity-0 group-hover/modal-file:opacity-100 transition-opacity" />
+                                                        </button>
+                                                    ) : (
+                                                        <p className="flex-1 text-sm font-bold text-[#455a64] truncate" title={item.file_name}>
+                                                            {item.file_name}
+                                                        </p>
+                                                    )}
+                                                </div>
 
-                                    <div className="bg-gray-50 rounded-2xl p-5 border border-gray-100">
-                                        <p className="text-[11px] font-bold text-[#90a4ae] uppercase tracking-wider mb-3">รายการงานพิมพ์</p>
-                                        <div className="flex items-center justify-between p-3 bg-white rounded-xl border border-gray-100 shadow-sm">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-8 h-8 bg-sky-50 text-sky-500 rounded-lg flex items-center justify-center"><FileText size={16} /></div>
-                                                <p className="text-sm font-medium text-[#455a64] truncate max-w-[200px]">{selectedOrder.fileName}</p>
+                                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+                                                    <div className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm flex flex-col">
+                                                        <span className="text-[10px] font-bold text-[#90a4ae] uppercase">จำนวนหน้า</span>
+                                                        <span className="text-xs font-bold text-[#455a64]">{item.page_count} หน้า</span>
+                                                    </div>
+                                                    <div className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm flex flex-col">
+                                                        <span className="text-[10px] font-bold text-[#90a4ae] uppercase">ประเภท</span>
+                                                        <span className="text-xs font-bold text-[#455a64]">{item.document_type || 'A4'}</span>
+                                                    </div>
+                                                    <div className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm flex flex-col">
+                                                        <span className="text-[10px] font-bold text-[#90a4ae] uppercase">สีการพิมพ์</span>
+                                                        <span className="text-xs font-bold text-[#455a64]">{item.document_detail || 'ขาว-ดำ'}</span>
+                                                    </div>
+                                                    <div className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm flex flex-col">
+                                                        <span className="text-[10px] font-bold text-[#90a4ae] uppercase">การเข้าเล่ม</span>
+                                                        <span className="text-xs font-bold text-[#455a64] truncate" title={item.extra_option}>{item.extra_option || '-'}</span>
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex items-center justify-between pt-3 border-t border-gray-200/60">
+                                                    <p className="text-xs font-semibold text-gray-500">จำนวน: {item.quantity} ชุด</p>
+                                                    <p className="text-sm font-black text-[#06B6D4]">฿{item.total_price?.toFixed(2) || '0.00'}</p>
+                                                </div>
                                             </div>
-                                            <p className="text-sm font-black text-[#06B6D4]">฿{selectedOrder.price}</p>
-                                        </div>
+                                        ))}
                                     </div>
 
                                     <div className="flex items-center justify-between pt-4 border-t border-dashed border-gray-200">
@@ -823,7 +1009,7 @@ export default function ShopDashboard() {
                         </button>
                     </div>
                     <div className="h-[200px]">
-                        <RevenueChart />
+                        <RevenueChart data={revenueValueData} labels={revenueLabels} />
                     </div>
                 </div>
                 <div className="bg-white rounded-2xl border border-[#eaf6f8] shadow-sm p-6">
@@ -834,23 +1020,85 @@ export default function ShopDashboard() {
                         </button>
                     </div>
                     <div className="space-y-4">
-                        {topServices.map((service) => (
+                        {topServiceData.length > 0 ? topServiceData.map((service) => (
                             <div key={service.name} className="group">
                                 <div className="flex items-center justify-between mb-1.5">
                                     <span className="text-sm text-[#455a64] font-medium">{service.name}</span>
                                     <span className="text-xs text-[#90a4ae]">{service.count} รายการ</span>
                                 </div>
-                                <div className="w-full h-2.5 bg-[#f0f4f5] rounded-full overflow-hidden">
+                                <div className="h-2 w-full bg-gray-50 rounded-full overflow-hidden border border-gray-100">
                                     <div
                                         className={`h-full ${service.color} rounded-full transition-all duration-700 ease-out group-hover:opacity-80`}
                                         style={{ width: `${service.percentage}%` }}
                                     />
                                 </div>
                             </div>
-                        ))}
+                        )) : (
+                            <div className="flex flex-col items-center justify-center h-full text-[#90a4ae] py-10 opacity-50">
+                                <ShoppingBag size={32} className="mb-2" />
+                                <p className="text-xs">ยังไม่มีข้อมูลการขาย</p>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
+
+            {/* File Preview Modal */}
+            {previewFile && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-300">
+                    <div className="bg-white w-full max-w-5xl h-[90vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col relative animate-in zoom-in-95 duration-300">
+                        {/* Header */}
+                        <div className="p-4 border-b flex items-center justify-between bg-white">
+                            <div className="flex items-center gap-4">
+                                <div className="w-10 h-10 rounded-xl bg-[#E0F7FA] flex items-center justify-center text-[#06B6D4]">
+                                    <FileText size={20} />
+                                </div>
+                                <div className="flex flex-col">
+                                    <h3 className="text-sm font-bold text-[#455a64] truncate max-w-[300px] md:max-w-[500px]">
+                                        {previewFile.name}
+                                    </h3>
+                                    <p className="text-[11px] text-[#90a4ae] font-medium">แสดงตัวอย่างไฟล์งาน</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <a
+                                    href={previewFile.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="hidden md:flex items-center gap-2 px-4 py-2 text-xs font-bold text-[#455a64] bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-all shrink-0"
+                                >
+                                    <Eye size={14} />
+                                    เปิดในแท็บใหม่
+                                </a>
+                                <button
+                                    onClick={() => setPreviewFile(null)}
+                                    className="w-10 h-10 bg-gray-50 border border-gray-100 rounded-xl flex items-center justify-center text-gray-400 hover:text-rose-500 hover:bg-rose-50 transition-all active:scale-95"
+                                >
+                                    <X size={20} />
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="flex-1 bg-gray-50 overflow-hidden relative flex items-center justify-center">
+                            {(previewFile.url.toLowerCase().includes('.pdf') || previewFile.name.toLowerCase().endsWith('.pdf')) ? (
+                                <iframe
+                                    src={`${previewFile.url}#toolbar=0&navpanes=0&scrollbar=1`}
+                                    className="w-full h-full border-0"
+                                    title="PDF Preview"
+                                />
+                            ) : (
+                                <div className="p-4 w-full h-full flex items-center justify-center">
+                                    <img
+                                        src={previewFile.url}
+                                        alt="Preview"
+                                        className="max-w-full max-h-full object-contain rounded-lg shadow-sm bg-white"
+                                    />
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div >
     )
 }

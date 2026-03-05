@@ -480,7 +480,7 @@ export default function TrackingPage() {
                                 <thead>
                                     <tr className="bg-gradient-to-r from-[#06B6D4] to-[#0891b2]">
                                         <th className="py-3.5 px-4 text-center font-semibold text-white text-xs tracking-wide uppercase">รหัสคำสั่งซื้อ</th>
-                                        <th className="py-3.5 px-4 text-center font-semibold text-white text-xs tracking-wide uppercase">สินค้า</th>
+                                        <th className="py-3.5 px-6 text-left font-semibold text-white text-xs tracking-wide uppercase">สินค้า</th>
                                         <th className="py-3.5 px-4 text-center font-semibold text-white text-xs tracking-wide uppercase">จำนวน</th>
                                         <th className="py-3.5 px-4 text-center font-semibold text-white text-xs tracking-wide uppercase">ราคา</th>
                                         <th className="py-3.5 px-4 text-center font-semibold text-white text-xs tracking-wide uppercase">สถานะ</th>
@@ -510,8 +510,8 @@ export default function TrackingPage() {
                                                         {order.id}
                                                     </span>
                                                 </td>
-                                                <td className="py-4 px-4 text-center text-gray-700 font-medium">
-                                                    <div className="truncate max-w-[180px] sm:max-w-[250px] md:max-w-[350px] mx-auto" title={order.product}>
+                                                <td className="py-4 px-6 text-left text-gray-700 font-medium">
+                                                    <div className="truncate max-w-[180px] sm:max-w-[250px] md:max-w-[350px]" title={order.product}>
                                                         {order.product}
                                                     </div>
                                                 </td>
@@ -522,7 +522,7 @@ export default function TrackingPage() {
                                                 </td>
                                                 <td className="py-4 px-4 text-center text-gray-700 font-semibold">{order.price?.toFixed(2) || "0.00"} <span className="text-gray-400 font-normal">฿</span></td>
                                                 <td className="py-4 px-4 text-center">
-                                                    <span className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-[11px] font-semibold ${getStatusStyle(order.status)}`}>
+                                                    <span className={`inline-flex items-center gap-1 whitespace-nowrap px-3 py-1.5 rounded-full text-[11px] font-semibold ${getStatusStyle(order.status)}`}>
                                                         <span className={`w-1.5 h-1.5 rounded-full ${order.status === "รอตรวจสอบสลิป" ? "bg-amber-500" :
                                                             order.status === "กำลังดำเนินการ" ? "bg-blue-500 animate-pulse" :
                                                                 order.status === "เสร็จรอรับ" ? "bg-cyan-500" :

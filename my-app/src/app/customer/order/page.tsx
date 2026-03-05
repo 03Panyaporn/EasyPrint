@@ -282,6 +282,7 @@ export default function OrderPage() {
             id: `${Date.now()}-${Math.random()}`,
             fileName: selectedFile.name,
             fileUrl: fileUrl ?? undefined,   // keep URL alive for checkout preview
+            file: selectedFile,               // actual File for storage upload
             documentType: selectedService.name,
             documentDetail: detailParts.length > 0 ? detailParts.join(", ") : "-",
             documentSize: documentSize || "-",
