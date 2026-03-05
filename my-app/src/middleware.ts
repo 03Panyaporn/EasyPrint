@@ -10,8 +10,9 @@ const authPaths = ['/auth/login', '/auth/register']
 export function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl
 
-    // อ่าน token จาก cookie
+    // อ่าน cookies
     const token = request.cookies.get('access_token')?.value
+    const role = request.cookies.get('user_role')?.value
 
     // ─────────────────────────────────────────────
     // 1) ถ้าเข้าหน้า protected (customer, shop) โดยไม่มี token → redirect ไปหน้า login
@@ -20,19 +21,39 @@ export function middleware(request: NextRequest) {
 
     if (isProtected && !token) {
         const loginUrl = new URL('/auth/login', request.url)
-        // เก็บ URL เดิมไว้ เพื่อ redirect กลับหลัง login สำเร็จ
         loginUrl.searchParams.set('redirect', pathname)
         return NextResponse.redirect(loginUrl)
     }
 
     // ─────────────────────────────────────────────
-    // 2) ถ้า Login แล้ว แต่เข้าหน้า auth (login/register) → redirect ไปหน้าหลัก
+    // 2) Role-based protection
+    // ─────────────────────────────────────────────
+    if (token) {
+        if (role) {
+            // Role exists -> Enforce role boundaries
+            if (pathname.startsWith('/shop') && role === 'customer') {
+                return NextResponse.redirect(new URL('/customer', request.url))
+            }
+            if (pathname.startsWith('/customer') && role === 'merchant') {
+                return NextResponse.redirect(new URL('/shop', request.url))
+            }
+        } else if (isProtected) {
+            // Token exists but Role is missing -> Likely an old session.
+            // Force re-login to set the role cookie for security.
+            const loginUrl = new URL('/auth/login', request.url)
+            loginUrl.searchParams.set('redirect', pathname)
+            return NextResponse.redirect(loginUrl)
+        }
+    }
+
+    // ─────────────────────────────────────────────
+    // 3) ถ้า Login แล้ว แต่เข้าหน้า auth (login/register) → redirect ตาม role
     // ─────────────────────────────────────────────
     const isAuthPage = authPaths.some((path) => pathname.startsWith(path))
 
     if (isAuthPage && token) {
-        // ถ้าล็อกอินแล้ว ไม่ให้เข้าหน้า login/register ให้ไปหน้าแรกของแต่ละบทบาท
-        return NextResponse.redirect(new URL('/', request.url))
+        const destination = role === 'merchant' ? '/shop' : '/customer'
+        return NextResponse.redirect(new URL(destination, request.url))
     }
 
     return NextResponse.next()

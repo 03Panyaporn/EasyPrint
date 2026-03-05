@@ -2,10 +2,15 @@
 import { useState } from "react"
 import Link from "next/link"
 import { useCart } from "@/context/CartContext"
+import { useChatUnread } from "@/hooks/useChatUnread"
 
 export default function Navbar() {
     const { cartCount } = useCart();
     const [showLogoutModal, setShowLogoutModal] = useState(false)
+
+    // Use the custom hook for unread count
+    const user = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || '{}') : {}
+    const unreadCount = useChatUnread({ userId: user.id, userType: 'customer' })
 
     const handleLogout = async () => {
         try {
@@ -25,6 +30,7 @@ export default function Navbar() {
         localStorage.removeItem('user')
 
         document.cookie = 'access_token=; path=/; max-age=0'
+        document.cookie = 'user_role=; path=/; max-age=0'
 
         window.location.href = '/'
     }
@@ -64,9 +70,14 @@ export default function Navbar() {
                         <Link
                             key={item.label}
                             href={item.href}
-                            className="relative py-1 hover:text-[#06B6D4] transition-colors duration-200 group"
+                            className="relative py-1 hover:text-[#06B6D4] transition-colors duration-200 group flex items-center gap-1.5"
                         >
                             {item.label}
+                            {item.label === "แชท" && unreadCount > 0 && (
+                                <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full px-1 animate-pulse">
+                                    {unreadCount}
+                                </span>
+                            )}
                             <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#06B6D4] rounded-full transition-all duration-300 group-hover:w-full" />
                         </Link>
                     ))}
@@ -99,7 +110,7 @@ export default function Navbar() {
 
                     {/* ปุ่มออกจากระบบ */}
                     <button
-                        onClick={handleLogout}
+                        onClick={() => setShowLogoutModal(true)}
                         className="group flex items-center gap-2 border border-[#D9D9D9] rounded-full px-4 py-2 text-sm text-gray-500 hover:border-red-400 hover:text-red-500 hover:bg-red-50 active:scale-95 transition-all duration-200 shadow-sm"
                     >
                         <svg
@@ -114,6 +125,42 @@ export default function Navbar() {
                     </button>
                 </div>
             </nav>
+
+            {/* Logout Confirmation Modal */}
+            {showLogoutModal && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-in fade-in duration-300">
+                    <div className="bg-white w-full max-w-[400px] rounded-[32px] shadow-2xl animate-in zoom-in-95 duration-300 relative overflow-hidden">
+                        <div className="p-8 text-center">
+                            <div className="w-20 h-20 bg-rose-50 rounded-full flex items-center justify-center text-rose-500 mx-auto mb-6">
+                                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                                    <polyline points="16 17 21 12 16 7" />
+                                    <line x1="21" y1="12" x2="9" y2="12" />
+                                </svg>
+                            </div>
+                            <h3 className="text-2xl font-black text-[#455a64] mb-2">ยืนยันการออกจากระบบ?</h3>
+                            <p className="text-sm text-[#90a4ae] leading-relaxed mb-8">
+                                คุณแน่ใจหรือไม่ที่จะออกจากระบบ?<br />
+                                คุณจะต้องเข้าสู่ระบบใหม่เพื่อใช้งานฟีเจอร์ต่างๆ
+                            </p>
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => setShowLogoutModal(false)}
+                                    className="flex-1 py-4 bg-gray-50 text-[#90a4ae] rounded-2xl text-sm font-bold hover:bg-gray-100 transition-all border border-gray-100"
+                                >
+                                    ยกเลิก
+                                </button>
+                                <button
+                                    onClick={handleLogout}
+                                    className="flex-1 py-4 bg-rose-500 text-white rounded-2xl text-sm font-bold hover:bg-rose-600 transition-all shadow-lg shadow-rose-200"
+                                >
+                                    ยืนยันออกระบบ
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

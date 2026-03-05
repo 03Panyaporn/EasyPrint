@@ -38,8 +38,8 @@ function LoginContent() {
             localStorage.setItem('user', JSON.stringify(data.user))
 
             // เก็บใน cookie (สำหรับ middleware server-side)
-            // เก็บใน cookie (สำหรับ middleware server-side)
             document.cookie = `access_token=${data.session.access_token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`
+            document.cookie = `user_role=${data.user.role || 'customer'}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`
 
             // Redirect ตามบทบาท (Role)
             if (data.user.role === 'merchant') {
