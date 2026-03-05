@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useCart } from "@/context/CartContext";
+import { supabase } from "@/lib/supabase";
 
 // ─────────────────────────────────────────────────────────────
 // FormRow component
@@ -15,6 +16,9 @@ function FormRow({
     options: { value: string; label: string }[];
     placeholder: string;
 }) {
+    // If no options, don't render the row to keep it clean
+    if (!options || options.length === 0) return null;
+
     return (
         <div className="flex items-center gap-4 group">
             <label className="w-36 text-sm font-medium text-gray-400 shrink-0 group-hover:text-[#06B6D4] transition-colors duration-200">
@@ -45,14 +49,20 @@ function FormRow({
 export default function OrderPage() {
     const { addToCart } = useCart();
 
+    const [services, setServices] = useState<any[]>([]);
+    const [selectedCategory, setSelectedCategory] = useState("");
+
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [fileUrl, setFileUrl] = useState<string | null>(null);
     const [dragOver, setDragOver] = useState(false);
-    const [documentType, setDocumentType] = useState("");
-    const [documentDetail, setDocumentDetail] = useState("");
+
+    // Dynamic options state based on DB schema
+    const [documentColor, setDocumentColor] = useState("");
+    const [documentSide, setDocumentSide] = useState("");
     const [documentSize, setDocumentSize] = useState("");
-    const [quantity, setQuantity] = useState(1);
+    const [documentThickness, setDocumentThickness] = useState("");
     const [extraOption, setExtraOption] = useState("");
+    const [quantity, setQuantity] = useState(1);
 
     // PDF page state
     const [pageCount, setPageCount] = useState(0);
@@ -62,25 +72,112 @@ export default function OrderPage() {
     // Toast state
     const [showToast, setShowToast] = useState(false);
 
-    const pricePerPage = 15;
-    const totalPrice = selectedFile ? (pricePerPage * quantity).toFixed(2) : "0.00";
+    // Fetch services on mount
+    useEffect(() => {
+        const fetchServices = async () => {
+            try {
+                const { data, error } = await supabase
+                    .from('services')
+                    .select('*')
+                    .eq('status', 'ใช้งาน')
+                    .order('created_at', { ascending: false });
+                if (error) throw error;
+                if (data) setServices(data);
+            } catch (error) {
+                console.error("Error fetching services:", error);
+            }
+        };
+        fetchServices();
+    }, []);
 
-    // ── ตรวจสอบว่าครบเงื่อนไขหรือไม่ ──────────────────────────
-    const isFormComplete =
-        selectedFile !== null &&
-        documentType !== "" &&
-        documentDetail !== "" &&
-        documentSize !== "" &&
-        extraOption !== "";
+    const selectedService = services.find(s => s.category === selectedCategory);
 
-    // ── ฟิลด์ที่ยังขาด (สำหรับ tooltip) ──────────────────────
+    // Form logic handling and price mapping
+    const findPrice = (list: any[], name: string) => {
+        const option = list?.find((o: any) => o.name === name);
+        return Number(option?.price) || 0;
+    };
+
+    let unitPrice = Number(selectedService?.base_price) || 0;
+    if (selectedService) {
+        unitPrice += findPrice(selectedService.options?.colors, documentColor);
+        unitPrice += findPrice(selectedService.options?.sides, documentSide);
+        unitPrice += findPrice(selectedService.options?.sizes, documentSize);
+        unitPrice += findPrice(selectedService.options?.thickness, documentThickness);
+    }
+
+    const extraPrice = selectedService ? findPrice(selectedService.options?.special, extraOption) : 0;
+
+    // Some units calculate by page, others just by piece
+    const baseAmount = selectedService?.unit === 'ต่อหน้า' && pageCount > 0 ? pageCount * quantity : quantity;
+    const totalPriceNum = selectedFile ? (unitPrice * baseAmount) + (extraPrice * quantity) : 0;
+    const totalPrice = isNaN(totalPriceNum) ? "0.00" : totalPriceNum.toFixed(2);
+
+    // Options for dropdowns
+    const serviceOptions = services.map(s => ({ value: s.id, label: `${s.category} (เริ่มต้น ${s.base_price || 0}฿)` }));
+
+    const mapToDropdown = (list: any[] = []) => list.map((opt: any) => {
+        return {
+            value: opt.name,
+            label: opt.name
+        };
+    });
+
+    const colorOptionsItems = mapToDropdown(selectedService?.options?.colors);
+    const sideOptionsItems = mapToDropdown(selectedService?.options?.sides);
+    const sizeOptionsItems = mapToDropdown(selectedService?.options?.sizes);
+    const thicknessOptionsItems = mapToDropdown(selectedService?.options?.thickness);
+    // Special options typically add +baht that does not multiply by page, but multiply by quantity
+    const mapToDropdownWithPrice = (list: any[] = []) => list.map((opt: any) => {
+        const p = Number(opt.price) || 0;
+        return {
+            value: opt.name,
+            label: p > 0 ? `${opt.name} (+${p}฿)` : opt.name
+        };
+    });
+
+    const specialOptionsItems = [
+        ...mapToDropdownWithPrice(selectedService?.options?.special),
+        { value: "none", label: "ไม่มีเพิ่มเติม" }
+    ];
+
+    // Check validity
+    const isColorValid = !selectedService?.options?.colors?.length || documentColor !== "";
+    const isSideValid = !selectedService?.options?.sides?.length || documentSide !== "";
+    const isSizeValid = !selectedService?.options?.sizes?.length || documentSize !== "";
+    const isThicknessValid = !selectedService?.options?.thickness?.length || documentThickness !== "";
+    const isSpecialValid = !selectedService?.options?.special?.length || extraOption !== "";
+
+    const isFormComplete = Boolean(
+        selectedFile &&
+        selectedCategory &&
+        isColorValid &&
+        isSideValid &&
+        isSizeValid &&
+        isThicknessValid &&
+        isSpecialValid
+    );
+
     const missingFields = [
         !selectedFile && "อัปโหลดไฟล์",
-        !documentType && "ประเภทเอกสาร",
-        !documentDetail && "รายละเอียดเอกสาร",
-        !documentSize && "ขนาด",
-        !extraOption && "ตัวเลือกเพิ่มเติม",
+        !selectedCategory && "ประเภทสินค้า",
+        selectedCategory && !isColorValid && "สี/ขาวดำ",
+        selectedCategory && !isSideValid && "หน้าเดียว/หน้าหลัง",
+        selectedCategory && !isSizeValid && "ขนาดเอกสาร",
+        selectedCategory && !isThicknessValid && "ความหนารวมถึงพื้นผิว",
+        selectedCategory && !isSpecialValid && "ตัวเลือกเพิ่มเติม",
     ].filter(Boolean) as string[];
+
+    const handleCategoryChange = (cat: string) => {
+        setSelectedCategory(cat);
+        // Reset dependent options
+        setDocumentColor("");
+        setDocumentSide("");
+        setDocumentSize("");
+        setDocumentThickness("");
+        setExtraOption("");
+        setQuantity(1);
+    };
 
     // ── นับหน้า PDF ด้วย pdf-lib ─────────────────────────────
     const countPdfPages = useCallback(async (file: File) => {
@@ -127,38 +224,33 @@ export default function OrderPage() {
 
     // ── เพิ่มลงตะกร้า ─────────────────────────────────────────
     const handleAddToCart = () => {
-        if (!isFormComplete || !selectedFile) return;
+        if (!isFormComplete || !selectedFile || !selectedService) return;
 
-        const LABELS: Record<string, string> = {
-            bw: "ถ่ายเอกสารขาวดำ", color: "ถ่ายเอกสารสี", photo: "รูปภาพ",
-            poster: "โปสเตอร์", card: "นามบัตร",
-            single: "หน้าเดียว", double: "หน้าหลัง (สองด้าน)",
-            A4: "A4", A3: "A3", A5: "A5",
-            staple_corner: "เย็บมุมซ้ายบน", spiral: "เข้าเล่มสันห่วง",
-            glue: "เข้าเล่มสันกาว", none: "ไม่มีเพิ่มเติม",
-        };
+        const detailParts = [documentColor, documentSide, documentThickness].filter(Boolean);
 
         addToCart({
             id: `${Date.now()}-${Math.random()}`,
             fileName: selectedFile.name,
             fileUrl: fileUrl ?? undefined,   // keep URL alive for checkout preview
-            documentType: LABELS[documentType] ?? documentType,
-            documentDetail: LABELS[documentDetail] ?? documentDetail,
-            documentSize: LABELS[documentSize] ?? documentSize,
+            documentType: selectedService.name,
+            documentDetail: detailParts.length > 0 ? detailParts.join(", ") : "-",
+            documentSize: documentSize || "-",
             quantity,
-            extraOption: LABELS[extraOption] ?? extraOption,
+            extraOption: extraOption === "none" || !extraOption ? "ไม่มีเพิ่มเติม" : extraOption,
             pageCount,
-            totalPrice: pricePerPage * quantity,
+            totalPrice: totalPriceNum,
         });
 
         // รีเซ็ตฟอร์ม (ไม่ revoke fileUrl เพราะ checkout ยังต้องใช้)
         setSelectedFile(null);
         setFileUrl(null);
-        setDocumentType("");
-        setDocumentDetail("");
+        setSelectedCategory("");
+        setDocumentColor("");
+        setDocumentSide("");
         setDocumentSize("");
-        setQuantity(1);
+        setDocumentThickness("");
         setExtraOption("");
+        setQuantity(1);
         setPageCount(0);
         setCurrentPage(1);
 
@@ -175,7 +267,7 @@ export default function OrderPage() {
         : null;
 
     return (
-        <div className="bg-[#F8FAFC] py-8 px-8">
+        <div className="bg-[#F8FAFC] py-8 px-8 min-h-screen">
             <div className="max-w-5xl mx-auto">
                 <div className="bg-white rounded-2xl shadow-sm border border-[#E0F3F7] overflow-hidden">
                     {/* top bar */}
@@ -184,8 +276,7 @@ export default function OrderPage() {
                     <div className="p-8">
                         <h1 className="text-lg font-semibold text-gray-700 mb-7">เริ่มสั่งพิมพ์</h1>
 
-                        <div className="flex gap-8">
-
+                        <div className="flex flex-col lg:flex-row gap-8">
                             {/* ── Left column ── */}
                             <div className="flex-1 flex flex-col gap-5">
 
@@ -244,28 +335,34 @@ export default function OrderPage() {
                                     />
                                 </label>
 
-                                {/* Form rows */}
-                                <FormRow label="ประเภทเอกสาร" value={documentType} onChange={setDocumentType}
-                                    placeholder="เลือกประเภทเอกสาร" options={[
-                                        { value: "bw", label: "ถ่ายเอกสารขาวดำ" },
-                                        { value: "color", label: "ถ่ายเอกสารสี" },
-                                        { value: "photo", label: "รูปภาพ" },
-                                        { value: "poster", label: "โปสเตอร์" },
-                                        { value: "card", label: "นามบัตร" },
-                                    ]} />
+                                {/* Category Selection */}
+                                <FormRow
+                                    label="ประเภทสินค้า"
+                                    value={selectedCategory}
+                                    onChange={handleCategoryChange}
+                                    placeholder="เลือกประเภทสินค้า"
+                                    options={Array.from(new Set(services.map(s => s.category))).map(c => ({ value: c as string, label: c as string }))}
+                                />
 
-                                <FormRow label="รายละเอียดเอกสาร" value={documentDetail} onChange={setDocumentDetail}
-                                    placeholder="รายละเอียดเอกสาร" options={[
-                                        { value: "single", label: "หน้าเดียว" },
-                                        { value: "double", label: "หน้าหลัง (สองด้าน)" },
-                                    ]} />
+                                {/* Dynamic Sub-options */}
+                                {selectedCategory && (
+                                    <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 space-y-5 animate-in fade-in slide-in-from-top-2 duration-300">
+                                        <FormRow label="สี / ขาวดำ" value={documentColor} onChange={setDocumentColor}
+                                            placeholder="เลือกประเภทสี" options={colorOptionsItems} />
 
-                                <FormRow label="ขนาด" value={documentSize} onChange={setDocumentSize}
-                                    placeholder="เลือกขนาดเอกสาร" options={[
-                                        { value: "A4", label: "A4" },
-                                        { value: "A3", label: "A3" },
-                                        { value: "A5", label: "A5" },
-                                    ]} />
+                                        <FormRow label="หน้าเดียว/สองหน้า" value={documentSide} onChange={setDocumentSide}
+                                            placeholder="เลือกรายละเอียดหน้า" options={sideOptionsItems} />
+
+                                        <FormRow label="ประเภทกระดาษ" value={documentThickness} onChange={setDocumentThickness}
+                                            placeholder="เลือกประเภทกระดาษ" options={thicknessOptionsItems} />
+
+                                        <FormRow label="ขนาดเอกสาร" value={documentSize} onChange={setDocumentSize}
+                                            placeholder="เลือกขนาดเอกสาร" options={sizeOptionsItems} />
+
+                                        <FormRow label="ตัวเลือกเพิ่มเติม" value={extraOption} onChange={setExtraOption}
+                                            placeholder="เลือกออปชันเสริม" options={specialOptionsItems} />
+                                    </div>
+                                )}
 
                                 {/* Quantity */}
                                 <div className="flex items-center gap-4 group">
@@ -277,28 +374,26 @@ export default function OrderPage() {
                                             className="w-9 h-9 rounded-xl border border-[#D9D9D9] text-gray-400 hover:border-[#06B6D4] hover:text-[#06B6D4] hover:bg-[#E0F3F7] active:scale-90 transition-all duration-150 flex items-center justify-center font-bold text-lg">−</button>
                                         <input type="number" min={1} value={quantity}
                                             onChange={(e) => setQuantity(Math.max(1, Number(e.target.value)))}
+                                            onFocus={(e) => e.target.value === '0' && e.target.select()}
                                             className="flex-1 border border-[#D9D9D9] rounded-xl px-4 py-2.5 text-sm text-gray-700 text-center focus:outline-none focus:ring-2 focus:ring-[#06B6D4]/30 focus:border-[#06B6D4] transition-all duration-200 font-semibold" />
                                         <button onClick={() => setQuantity(q => q + 1)}
                                             className="w-9 h-9 rounded-xl border border-[#D9D9D9] text-gray-400 hover:border-[#06B6D4] hover:text-white hover:bg-[#06B6D4] active:scale-90 transition-all duration-150 flex items-center justify-center font-bold text-lg">+</button>
                                     </div>
                                 </div>
 
-                                <FormRow label="ตัวเลือกเพิ่มเติม" value={extraOption} onChange={setExtraOption}
-                                    placeholder="เลือกตัวเลือกเพิ่มเติม" options={[
-                                        { value: "staple_corner", label: "เย็บมุมซ้ายบน" },
-                                        { value: "spiral", label: "เข้าเล่มสันห่วง" },
-                                        { value: "glue", label: "เข้าเล่มสันกาว" },
-                                        { value: "none", label: "ไม่มีเพิ่มเติม" },
-                                    ]} />
-
                                 {/* Total price */}
-                                <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-[#E0F3F7] to-[#F0FAFB] rounded-2xl border border-[#06B6D4]/20">
-                                    <span className="w-36 text-sm font-semibold text-gray-600">ราคารวม</span>
-                                    <div className="flex items-center gap-3">
-                                        <div className="bg-white text-[#06B6D4] font-bold text-2xl rounded-xl px-6 py-2 min-w-[110px] text-center tracking-wide shadow-sm border border-[#06B6D4]/20">
+                                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 bg-gradient-to-br from-[#E0F3F7] to-[#F0FAFB] rounded-2xl border border-[#06B6D4]/30 shadow-sm">
+                                    <div className="space-y-1">
+                                        <span className="block text-sm font-bold text-gray-600">ยอดรวมทั้งหมด</span>
+                                        {selectedService?.unit === 'ต่อหน้า' && (
+                                            <span className="block text-xs text-[#06B6D4] font-medium">* คิดราคาตามจำนวนหน้าเอกสาร</span>
+                                        )}
+                                    </div>
+                                    <div className="flex items-end md:items-center gap-3 self-end md:self-auto">
+                                        <div className="bg-white text-[#06B6D4] font-bold text-3xl rounded-xl px-6 py-3 min-w-[130px] text-center tracking-wide shadow-sm border border-[#06B6D4]/20">
                                             {totalPrice}
                                         </div>
-                                        <span className="text-sm text-gray-400 font-medium">บาท</span>
+                                        <span className="text-sm text-gray-400 font-bold mb-1">บาท</span>
                                     </div>
                                 </div>
 
@@ -315,21 +410,21 @@ export default function OrderPage() {
                                 )}
 
                                 {/* Buttons */}
-                                <div className="flex items-center justify-center gap-6 mt-4 pl-16">
+                                <div className="flex items-center justify-end gap-4 mt-2">
                                     <button onClick={() => window.history.back()}
-                                        className="px-8 py-2 text-sm bg-white text-gray-500 font-medium rounded-full border border-[#D9D9D9] hover:bg-[#E0F3F7] hover:text-[#06B6D4] hover:border-[#06B6D4] active:scale-95 transition-all duration-200 shadow-sm">
+                                        className="px-8 py-3 text-sm bg-white text-gray-500 font-bold rounded-xl border border-[#D9D9D9] hover:bg-[#E0F3F7] hover:text-[#06B6D4] hover:border-[#06B6D4] active:scale-95 transition-all duration-200">
                                         ย้อนกลับ
                                     </button>
                                     <button
                                         onClick={handleAddToCart}
                                         disabled={!isFormComplete}
                                         title={!isFormComplete ? `กรุณากรอก: ${missingFields.join(", ")}` : ""}
-                                        className={`px-8 py-2 text-sm font-semibold rounded-full active:scale-95 transition-all duration-200 shadow-md flex items-center gap-2 ${isFormComplete
-                                            ? "bg-gradient-to-r from-[#06B6D4] to-[#0891b2] text-white hover:shadow-[#06B6D4]/40 hover:shadow-xl cursor-pointer"
+                                        className={`px-8 py-3 text-sm font-bold rounded-xl active:scale-95 transition-all duration-200 shadow-md flex items-center gap-2 ${isFormComplete
+                                            ? "bg-gradient-to-r from-[#06B6D4] to-[#0891b2] text-white hover:shadow-[#06B6D4]/40 hover:shadow-lg cursor-pointer"
                                             : "bg-gray-200 text-gray-400 cursor-not-allowed shadow-none"
                                             }`}
                                     >
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
                                             stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                                             <circle cx="9" cy="21" r="1" /><circle cx="20" cy="21" r="1" />
                                             <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
@@ -340,7 +435,7 @@ export default function OrderPage() {
                             </div>
 
                             {/* ── Right column: Preview ── */}
-                            <div className="w-56 flex flex-col">
+                            <div className="w-full lg:w-72 flex flex-col">
                                 {/* Header */}
                                 <div className="flex items-center justify-between mb-3">
                                     <p className="text-sm text-gray-600 font-semibold">แสดงตัวอย่าง</p>
@@ -352,26 +447,26 @@ export default function OrderPage() {
                                 </div>
 
                                 {/* Preview box */}
-                                <div className="flex-1 border-2 border-[#06B6D4]/40 rounded-2xl overflow-hidden flex items-center justify-center bg-[#F8FAFC] min-h-[320px] hover:border-[#06B6D4] transition-colors duration-300">
+                                <div className="flex-1 border-2 border-[#06B6D4]/40 rounded-2xl overflow-hidden flex items-center justify-center bg-[#F8FAFC] min-h-[400px] lg:min-h-[500px] hover:border-[#06B6D4] transition-colors duration-300">
                                     {isPdf && iframeSrc ? (
                                         <iframe
                                             key={`pdf-p${currentPage}`}
                                             src={iframeSrc}
-                                            className="w-full h-full border-0 min-h-[316px]"
+                                            className="w-full h-full border-0 min-h-[400px] lg:min-h-[500px]"
                                             title={`PDF หน้า ${currentPage}`}
                                         />
                                     ) : isImage && fileUrl ? (
                                         <img src={fileUrl} alt="ตัวอย่าง" className="w-full h-full object-contain p-2" />
                                     ) : (
                                         <div className="w-full h-full p-3 flex items-center justify-center">
-                                            <div className="w-full h-full bg-[#EBEBEB] rounded-xl flex flex-col items-center justify-center gap-2">
-                                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none"
+                                            <div className="w-full h-full bg-[#EBEBEB] rounded-xl flex flex-col items-center justify-center gap-3">
+                                                <svg width="40" height="40" viewBox="0 0 24 24" fill="none"
                                                     stroke="#ccc" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                                                     <rect x="3" y="3" width="18" height="18" rx="2" />
                                                     <circle cx="8.5" cy="8.5" r="1.5" />
                                                     <polyline points="21 15 16 10 5 21" />
                                                 </svg>
-                                                <span className="text-xs text-gray-400">ตัวอย่าง</span>
+                                                <span className="text-xs text-gray-400 font-medium">ตัวอย่าง</span>
                                             </div>
                                         </div>
                                     )}
@@ -380,24 +475,24 @@ export default function OrderPage() {
                                 {/* Page navigation */}
                                 {isPdf && pageCount > 1 && (
                                     <>
-                                        <div className="mt-3 flex items-center justify-between">
+                                        <div className="mt-4 flex items-center justify-between bg-white p-2 rounded-xl border border-gray-100 shadow-sm">
                                             <button
                                                 onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                                                 disabled={currentPage === 1}
-                                                className="w-8 h-8 rounded-lg border border-[#D9D9D9] flex items-center justify-center text-gray-400 hover:border-[#06B6D4] hover:text-[#06B6D4] hover:bg-[#E0F3F7] disabled:opacity-30 disabled:cursor-not-allowed transition-all">
-                                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+                                                className="w-9 h-9 rounded-lg border border-[#D9D9D9] flex items-center justify-center text-gray-400 hover:border-[#06B6D4] hover:text-[#06B6D4] hover:bg-[#E0F3F7] disabled:opacity-30 disabled:cursor-not-allowed transition-all">
+                                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
                                                     stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                                                     <polyline points="15 18 9 12 15 6" />
                                                 </svg>
                                             </button>
-                                            <span className="text-xs text-gray-500 font-medium">
-                                                หน้า <span className="text-[#06B6D4] font-bold">{currentPage}</span> / {pageCount}
+                                            <span className="text-xs text-gray-500 font-bold tracking-wide">
+                                                หน้า <span className="text-[#06B6D4] text-sm">{currentPage}</span> / {pageCount}
                                             </span>
                                             <button
                                                 onClick={() => setCurrentPage(p => Math.min(pageCount, p + 1))}
                                                 disabled={currentPage === pageCount}
-                                                className="w-8 h-8 rounded-lg border border-[#D9D9D9] flex items-center justify-center text-gray-400 hover:border-[#06B6D4] hover:text-[#06B6D4] hover:bg-[#E0F3F7] disabled:opacity-30 disabled:cursor-not-allowed transition-all">
-                                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+                                                className="w-9 h-9 rounded-lg border border-[#D9D9D9] flex items-center justify-center text-gray-400 hover:border-[#06B6D4] hover:text-[#06B6D4] hover:bg-[#E0F3F7] disabled:opacity-30 disabled:cursor-not-allowed transition-all">
+                                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
                                                     stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                                                     <polyline points="9 18 15 12 9 6" />
                                                 </svg>
@@ -406,11 +501,11 @@ export default function OrderPage() {
 
                                         {/* Page dots — max 10 pages */}
                                         {pageCount <= 10 && (
-                                            <div className="mt-2 flex justify-center gap-1 flex-wrap">
+                                            <div className="mt-3 flex justify-center gap-1.5 flex-wrap">
                                                 {Array.from({ length: pageCount }, (_, i) => i + 1).map(p => (
                                                     <button key={p} onClick={() => setCurrentPage(p)}
-                                                        className={`w-5 h-5 rounded-md text-[9px] font-bold transition-all ${currentPage === p
-                                                            ? "bg-[#06B6D4] text-white shadow-sm"
+                                                        className={`w-6 h-6 rounded-md text-[10px] font-bold transition-all ${currentPage === p
+                                                            ? "bg-[#06B6D4] text-white shadow-sm shadow-[#06B6D4]/30"
                                                             : "bg-[#E0F3F7] text-[#06B6D4] hover:bg-[#06B6D4]/20"
                                                             }`}>
                                                         {p}

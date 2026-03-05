@@ -1,14 +1,18 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { ChevronRight, Plus, Trash2, Calculator, Settings2, Loader2, Check } from "lucide-react"
+import { useRouter, useParams } from "next/navigation"
+import { ChevronRight, Plus, Trash2, Calculator, Settings2, Check, Loader2 } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 
-export default function AddServicePage() {
+export default function EditServicePage() {
     const router = useRouter()
+    const params = useParams()
+    const serviceId = params.id as string
+
     const [loading, setLoading] = useState(false)
+    const [fetching, setFetching] = useState(true)
     const [showToast, setShowToast] = useState(false)
 
     // ─── FORM STATES ───
@@ -17,31 +21,64 @@ export default function AddServicePage() {
     const [basePrice, setBasePrice] = useState(2)
     const [minQuantity, setMinQuantity] = useState(1)
 
-    // Dynamic Lists
-    const [colorOptions, setColorOptions] = useState<{ name: string, price: number }[]>([
-        { name: "ขาวดำ", price: 0 }, { name: "สี", price: 0 }
-    ])
-    const [sideOptions, setSideOptions] = useState<{ name: string, price: number }[]>([
-        { name: "หน้าเดียว", price: 0 }, { name: "สองหน้า", price: 0 }
-    ])
-    const [sizeOptions, setSizeOptions] = useState<{ name: string, price: number }[]>([
-        { name: "A4", price: 0 }, { name: "A3", price: 0 }
-    ])
-    const [thicknessOptions, setThicknessOptions] = useState<{ name: string, price: number }[]>([
-        { name: "กระดาษปกติ 80 แกรม", price: 0 }, { name: "กระดาษหนา 120 แกรม", price: 0 }
-    ])
-    const [specialOptions, setSpecialOptions] = useState<{ name: string, price: number }[]>([
-        { name: "เข้าเล่มเกลียว", price: 0 },
-        { name: "เคลือบเอกสาร", price: 0 },
-        { name: "เย็บมุม", price: 0 },
-        { name: "เข้าสันกระดูกงู", price: 0 }
-    ])
+    // Dynamic Options Lists
+    const [colorOptions, setColorOptions] = useState<{ name: string, price: number }[]>([])
+    const [sideOptions, setSideOptions] = useState<{ name: string, price: number }[]>([])
+    const [sizeOptions, setSizeOptions] = useState<{ name: string, price: number }[]>([])
+    const [thicknessOptions, setThicknessOptions] = useState<{ name: string, price: number }[]>([])
+    const [specialOptions, setSpecialOptions] = useState<{ name: string, price: number }[]>([])
 
     // File Settings
-    const [fileTypes, setFileTypes] = useState<string[]>(['PDF', 'DOCX', 'JPG'])
+    const [fileTypes, setFileTypes] = useState<string[]>([])
     const [maxFileSize, setMaxFileSize] = useState(10)
     const [maxFiles, setMaxFiles] = useState(5)
     const [filePreview, setFilePreview] = useState(true)
+
+    useEffect(() => {
+        if (serviceId) {
+            fetchServiceData()
+        }
+    }, [serviceId])
+
+    const fetchServiceData = async () => {
+        try {
+            setFetching(true)
+            const { data, error } = await supabase
+                .from('services')
+                .select('*')
+                .eq('id', serviceId)
+                .single()
+
+            if (error) throw error
+
+            if (data) {
+                setCategory(data.category || "เอกสาร")
+                setPriceUnit(data.unit || "ต่อหน้า")
+                setBasePrice(data.base_price || 0)
+                setMinQuantity(data.min_quantity || 1)
+
+                if (data.options) {
+                    setColorOptions(data.options.colors || [])
+                    setSideOptions(data.options.sides || [])
+                    setSizeOptions(data.options.sizes || [])
+                    setThicknessOptions(data.options.thickness || [])
+                    setSpecialOptions(data.options.special || [])
+                }
+
+                if (data.file_settings) {
+                    setFileTypes(data.file_settings.allowed_types || [])
+                    setMaxFileSize(data.file_settings.max_size_mb || 10)
+                    setMaxFiles(data.file_settings.max_files || 5)
+                    setFilePreview(data.file_settings.preview_enabled ?? true)
+                }
+            }
+        } catch (error) {
+            console.error("Error fetching service detail:", error)
+            alert("ไม่สามารถดึงข้อมูลสินค้าได้")
+        } finally {
+            setFetching(false)
+        }
+    }
 
     // ─── HANDLERS FOR DYNAMIC LISTS ───
     const addItem = (setter: any) => {
@@ -65,12 +102,20 @@ export default function AddServicePage() {
     }
 
     // ─── SUBMIT HANDLER ───
-    const handleAddService = async () => {
+    const handleUpdateService = async () => {
         setLoading(true)
         try {
+            const userJson = localStorage.getItem('user')
+            const user = userJson ? JSON.parse(userJson) : null
+
+            if (!user?.id) {
+                alert("กรุณาเข้าสู่ระบบก่อนดำเนินการ")
+                return
+            }
+
             const { error } = await supabase
                 .from('services')
-                .insert([{
+                .update({
                     name: category,
                     category: category,
                     base_price: basePrice,
@@ -88,10 +133,9 @@ export default function AddServicePage() {
                         max_size_mb: maxFileSize,
                         max_files: maxFiles,
                         preview_enabled: filePreview
-                    },
-                    status: 'ใช้งาน',
-                    merchant_id: 'b9652bb2-cba5-4440-9d89-0f93f598cb67' // Temporarily hardcoded with valid merchant UUID until auth is set up
-                }])
+                    }
+                })
+                .eq('id', serviceId)
 
             if (error) throw error
 
@@ -100,7 +144,7 @@ export default function AddServicePage() {
                 router.push("/shop/services")
             }, 1500)
         } catch (error: any) {
-            console.error("Error adding service:", error.message)
+            console.error("Error updating service:", error.message)
             alert("เกิดข้อผิดพลาด: " + error.message)
         } finally {
             setLoading(false)
@@ -123,6 +167,15 @@ export default function AddServicePage() {
 
     const totalPrice = (basePrice * calcQty) + extrasTotal
 
+    if (fetching) {
+        return (
+            <div className="min-h-screen flex flex-col items-center justify-center space-y-4">
+                <Loader2 className="animate-spin text-[#06B6D4]" size={40} />
+                <p className="text-[#90a4ae] font-medium">กำลังโหลดข้อมูล...</p>
+            </div>
+        )
+    }
+
     return (
         <div className="p-8 pb-32 max-w-7xl mx-auto space-y-8 animate-in fade-in zoom-in-95 duration-500">
             {/* Header section */}
@@ -132,14 +185,14 @@ export default function AddServicePage() {
                         บริการและราคา
                     </Link>
                     <ChevronRight size={16} />
-                    <span className="text-[#455a64]">เพิ่มสินค้าใหม่</span>
+                    <span className="text-[#455a64]">แก้ไขสินค้า</span>
                 </div>
                 <div>
                     <h1 className="text-2xl md:text-3xl font-bold text-[#455a64] tracking-tight mb-2">
-                        เพิ่มสินค้าใหม่
+                        แก้ไขสินค้า
                     </h1>
                     <p className="text-[#90a4ae] text-base">
-                        กำหนดบริการใหม่และราคา
+                        ปรับปรุงข้อมูลและราคาสำหรับสินค้านี้
                     </p>
                 </div>
             </div>
@@ -156,15 +209,18 @@ export default function AddServicePage() {
                                 <label className="block text-sm font-bold text-[#455a64] mb-2">
                                     ประเภทสินค้า <span className="text-red-500">*</span>
                                 </label>
-                                <select
-                                    value={category}
-                                    onChange={(e) => setCategory(e.target.value)}
-                                    className="w-full rounded-2xl border-none p-4 text-[#455a64] bg-white shadow-sm focus:ring-2 focus:ring-[#06B6D4]/30 outline-none transition-all">
-                                    <option>เอกสาร</option>
-                                    <option>โปสเตอร์</option>
-                                    <option>รูปภาพ</option>
-                                    <option>นามบัตร</option>
-                                </select>
+                                <div className="flex gap-4">
+                                    <select
+                                        value={category}
+                                        onChange={(e) => setCategory(e.target.value)}
+                                        className="flex-1 rounded-2xl border-none p-4 text-[#455a64] bg-white shadow-sm focus:ring-2 focus:ring-[#06B6D4]/30 outline-none transition-all"
+                                    >
+                                        <option>เอกสาร</option>
+                                        <option>โปสเตอร์</option>
+                                        <option>รูปภาพ</option>
+                                        <option>นามบัตร</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -179,7 +235,8 @@ export default function AddServicePage() {
                                 <h3 className="font-bold text-[#455a64]">สี / ขาวดำ</h3>
                                 <button
                                     onClick={() => addItem(setColorOptions)}
-                                    className="flex items-center gap-1 text-sm font-medium text-[#06B6D4] hover:text-[#0891b2] transition-colors rounded-full px-3 py-1 hover:bg-[#E0F7FA]">
+                                    className="flex items-center gap-1 text-sm font-medium text-[#06B6D4] hover:text-[#0891b2] transition-colors rounded-full px-3 py-1 hover:bg-[#E0F7FA]"
+                                >
                                     <Plus size={16} />
                                     <span>เพิ่ม</span>
                                 </button>
@@ -204,7 +261,8 @@ export default function AddServicePage() {
                                             <span className="text-[#90a4ae] text-sm">บาท</span>
                                             <button
                                                 onClick={() => removeItem(setColorOptions, idx)}
-                                                className="p-2 text-[#ff8a8a] hover:bg-red-50 hover:text-red-500 rounded-xl transition-colors">
+                                                className="p-2 text-[#ff8a8a] hover:bg-red-50 hover:text-red-500 rounded-xl transition-colors"
+                                            >
                                                 <Trash2 size={18} />
                                             </button>
                                         </div>
@@ -219,7 +277,8 @@ export default function AddServicePage() {
                                 <h3 className="font-bold text-[#455a64]">หน้าเดียว / สองหน้า</h3>
                                 <button
                                     onClick={() => addItem(setSideOptions)}
-                                    className="flex items-center gap-1 text-sm font-medium text-[#06B6D4] hover:text-[#0891b2] transition-colors rounded-full px-3 py-1 hover:bg-[#E0F7FA]">
+                                    className="flex items-center gap-1 text-sm font-medium text-[#06B6D4] hover:text-[#0891b2] transition-colors rounded-full px-3 py-1 hover:bg-[#E0F7FA]"
+                                >
                                     <Plus size={16} />
                                     <span>เพิ่ม</span>
                                 </button>
@@ -244,7 +303,8 @@ export default function AddServicePage() {
                                             <span className="text-[#90a4ae] text-sm">บาท</span>
                                             <button
                                                 onClick={() => removeItem(setSideOptions, idx)}
-                                                className="p-2 text-[#ff8a8a] hover:bg-red-50 hover:text-red-500 rounded-xl transition-colors">
+                                                className="p-2 text-[#ff8a8a] hover:bg-red-50 hover:text-red-500 rounded-xl transition-colors"
+                                            >
                                                 <Trash2 size={18} />
                                             </button>
                                         </div>
@@ -259,7 +319,8 @@ export default function AddServicePage() {
                                 <h3 className="font-bold text-[#455a64]">ขนาดเอกสาร</h3>
                                 <button
                                     onClick={() => addItem(setSizeOptions)}
-                                    className="flex items-center gap-1 text-sm font-medium text-[#06B6D4] hover:text-[#0891b2] transition-colors rounded-full px-3 py-1 hover:bg-[#E0F7FA]">
+                                    className="flex items-center gap-1 text-sm font-medium text-[#06B6D4] hover:text-[#0891b2] transition-colors rounded-full px-3 py-1 hover:bg-[#E0F7FA]"
+                                >
                                     <Plus size={16} />
                                     <span>เพิ่ม</span>
                                 </button>
@@ -284,7 +345,8 @@ export default function AddServicePage() {
                                             <span className="text-[#90a4ae] text-sm">บาท</span>
                                             <button
                                                 onClick={() => removeItem(setSizeOptions, idx)}
-                                                className="p-2 text-[#ff8a8a] hover:bg-red-50 hover:text-red-500 rounded-xl transition-colors">
+                                                className="p-2 text-[#ff8a8a] hover:bg-red-50 hover:text-red-500 rounded-xl transition-colors"
+                                            >
                                                 <Trash2 size={18} />
                                             </button>
                                         </div>
@@ -299,7 +361,8 @@ export default function AddServicePage() {
                                 <h3 className="font-bold text-[#455a64]">ประเภทกระดาษ</h3>
                                 <button
                                     onClick={() => addItem(setThicknessOptions)}
-                                    className="flex items-center gap-1 text-sm font-medium text-[#06B6D4] hover:text-[#0891b2] transition-colors rounded-full px-3 py-1 hover:bg-[#E0F7FA]">
+                                    className="flex items-center gap-1 text-sm font-medium text-[#06B6D4] hover:text-[#0891b2] transition-colors rounded-full px-3 py-1 hover:bg-[#E0F7FA]"
+                                >
                                     <Plus size={16} />
                                     <span>เพิ่ม</span>
                                 </button>
@@ -324,7 +387,8 @@ export default function AddServicePage() {
                                             <span className="text-[#90a4ae] text-sm">บาท</span>
                                             <button
                                                 onClick={() => removeItem(setThicknessOptions, idx)}
-                                                className="p-2 text-[#ff8a8a] hover:bg-red-50 hover:text-red-500 rounded-xl transition-colors">
+                                                className="p-2 text-[#ff8a8a] hover:bg-red-50 hover:text-red-500 rounded-xl transition-colors"
+                                            >
                                                 <Trash2 size={18} />
                                             </button>
                                         </div>
@@ -344,7 +408,8 @@ export default function AddServicePage() {
                                 <h3 className="font-bold text-[#fbc02d]">3. Option พิเศษ</h3>
                                 <button
                                     onClick={() => addItem(setSpecialOptions)}
-                                    className="flex items-center gap-1 text-sm font-medium text-[#fbc02d] hover:text-[#f9a825] transition-colors rounded-full px-3 py-1 hover:bg-yellow-50">
+                                    className="flex items-center gap-1 text-sm font-medium text-[#fbc02d] hover:text-[#f9a825] transition-colors rounded-full px-3 py-1 hover:bg-yellow-50"
+                                >
                                     <Plus size={16} />
                                     <span>เพิ่ม Option</span>
                                 </button>
@@ -363,13 +428,13 @@ export default function AddServicePage() {
                                                 type="number"
                                                 value={opt.price}
                                                 onChange={(e) => updateItem(setSpecialOptions, idx, 'price', e.target.value)}
-                                                onFocus={(e) => e.target.value === '0' && e.target.select()}
                                                 className="w-24 text-right rounded-xl border border-[#E0E0E0] p-2 text-[#455a64] focus:outline-none focus:border-[#fbc02d] focus:ring-1 focus:ring-[#fbc02d]"
                                             />
                                             <span className="text-[#90a4ae] text-sm">บาท</span>
                                             <button
                                                 onClick={() => removeItem(setSpecialOptions, idx)}
-                                                className="p-2 text-[#ff8a8a] hover:bg-red-50 hover:text-red-500 rounded-xl transition-colors">
+                                                className="p-2 text-[#ff8a8a] hover:bg-red-50 hover:text-red-500 rounded-xl transition-colors"
+                                            >
                                                 <Trash2 size={18} />
                                             </button>
                                         </div>
@@ -390,7 +455,8 @@ export default function AddServicePage() {
                                 <select
                                     value={priceUnit}
                                     onChange={(e) => setPriceUnit(e.target.value)}
-                                    className="w-full rounded-2xl border border-[#E0E0E0] p-4 text-[#455a64] bg-[#FAFAFA] focus:ring-2 focus:ring-[#06B6D4]/30 outline-none transition-all">
+                                    className="w-full rounded-2xl border border-[#E0E0E0] p-4 text-[#455a64] bg-[#FAFAFA] focus:ring-2 focus:ring-[#06B6D4]/30 outline-none transition-all"
+                                >
                                     <option>ต่อหน้า</option>
                                     <option>ต่อแผ่น</option>
                                     <option>ต่อชิ้น</option>
@@ -406,8 +472,8 @@ export default function AddServicePage() {
                                     type="number"
                                     value={basePrice}
                                     onChange={(e) => setBasePrice(Number(e.target.value))}
-                                    onFocus={(e) => e.target.value === '0' && e.target.select()}
-                                    className="w-full rounded-2xl border border-[#E0E0E0] p-4 text-[#455a64] bg-[#FAFAFA] focus:ring-2 focus:ring-[#06B6D4]/30 outline-none transition-all" />
+                                    className="w-full rounded-2xl border border-[#E0E0E0] p-4 text-[#455a64] bg-[#FAFAFA] focus:ring-2 focus:ring-[#06B6D4]/30 outline-none transition-all"
+                                />
                             </div>
                             <div className="space-y-2 md:col-start-2">
                                 <label className="block text-sm font-bold text-[#455a64]">
@@ -417,7 +483,8 @@ export default function AddServicePage() {
                                     type="number"
                                     value={minQuantity}
                                     onChange={(e) => setMinQuantity(Number(e.target.value))}
-                                    className="w-full rounded-2xl border border-[#E0E0E0] p-4 text-[#455a64] bg-[#FAFAFA] focus:ring-2 focus:ring-[#06B6D4]/30 outline-none transition-all" />
+                                    className="w-full rounded-2xl border border-[#E0E0E0] p-4 text-[#455a64] bg-[#FAFAFA] focus:ring-2 focus:ring-[#06B6D4]/30 outline-none transition-all"
+                                />
                             </div>
                         </div>
                     </div>
@@ -433,21 +500,18 @@ export default function AddServicePage() {
                                 ประเภทไฟล์ที่รองรับ
                             </label>
                             <div className="flex flex-wrap gap-2">
-                                {['PDF', 'DOCX', 'JPG', 'PNG', 'AI', 'PSD'].map((type) => {
-                                    const isSelected = fileTypes.includes(type)
-                                    return (
-                                        <button
-                                            key={type}
-                                            onClick={() => toggleFileType(type)}
-                                            className={`px-4 py-2 rounded-full text-sm font-bold transition-all ${isSelected
-                                                ? "bg-[#e91e63] text-white shadow-md shadow-[#e91e63]/20"
-                                                : "bg-[#F8FAFC] text-[#90a4ae] hover:bg-[#E0E0E0]"
-                                                }`}
-                                        >
-                                            {type}
-                                        </button>
-                                    )
-                                })}
+                                {['PDF', 'DOCX', 'JPG', 'PNG', 'AI', 'PSD'].map((type, i) => (
+                                    <button
+                                        key={type}
+                                        onClick={() => toggleFileType(type)}
+                                        className={`px-4 py-2 rounded-full text-sm font-bold transition-all ${fileTypes.includes(type)
+                                            ? "bg-[#e91e63] text-white shadow-md shadow-[#e91e63]/20"
+                                            : "bg-[#F8FAFC] text-[#90a4ae] hover:bg-[#E0E0E0]"
+                                            }`}
+                                    >
+                                        {type}
+                                    </button>
+                                ))}
                             </div>
                         </div>
 
@@ -460,7 +524,8 @@ export default function AddServicePage() {
                                     type="number"
                                     value={maxFileSize}
                                     onChange={(e) => setMaxFileSize(Number(e.target.value))}
-                                    className="w-full rounded-2xl border border-[#E0E0E0] p-3 text-[#455a64] bg-[#FAFAFA] focus:ring-2 focus:ring-[#e91e63]/30 outline-none transition-all" />
+                                    className="w-full rounded-2xl border border-[#E0E0E0] p-3 text-[#455a64] bg-[#FAFAFA] focus:ring-2 focus:ring-[#e91e63]/30 outline-none transition-all"
+                                />
                             </div>
                             <div className="space-y-2">
                                 <label className="block text-sm font-bold text-[#455a64]">
@@ -470,7 +535,8 @@ export default function AddServicePage() {
                                     type="number"
                                     value={maxFiles}
                                     onChange={(e) => setMaxFiles(Number(e.target.value))}
-                                    className="w-full rounded-2xl border border-[#E0E0E0] p-3 text-[#455a64] bg-[#FAFAFA] focus:ring-2 focus:ring-[#e91e63]/30 outline-none transition-all" />
+                                    className="w-full rounded-2xl border border-[#E0E0E0] p-3 text-[#455a64] bg-[#FAFAFA] focus:ring-2 focus:ring-[#e91e63]/30 outline-none transition-all"
+                                />
                             </div>
                         </div>
 
@@ -492,13 +558,20 @@ export default function AddServicePage() {
                     </div>
 
                     {/* Bottom Action */}
-                    <div className="pt-6 flex justify-center">
+                    <div className="pt-6 flex justify-center gap-4">
+                        <Link
+                            href="/shop/services"
+                            className="bg-white border text-gray-600 border-gray-200 hover:bg-gray-50 px-12 py-4 rounded-full font-bold text-lg shadow-sm transition-all flex items-center gap-2"
+                        >
+                            ยกเลิก
+                        </Link>
                         <button
-                            onClick={handleAddService}
+                            onClick={handleUpdateService}
                             disabled={loading}
-                            className="bg-gradient-to-r from-[#06B6D4] to-[#0891b2] hover:from-[#0891b2] hover:to-[#0e7490] disabled:opacity-50 text-white px-12 py-4 rounded-full font-bold text-lg shadow-lg shadow-[#06B6D4]/30 hover:shadow-xl transform hover:-translate-y-0.5 transition-all flex items-center gap-2">
-                            {loading && <Loader2 size={20} className="animate-spin" />}
-                            เพิ่มสินค้า
+                            className="bg-gradient-to-r from-[#06B6D4] to-[#0891b2] hover:from-[#0891b2] hover:to-[#0e7490] text-white px-12 py-4 rounded-full font-bold text-lg shadow-lg shadow-[#06B6D4]/30 hover:shadow-xl transform hover:-translate-y-0.5 transition-all flex items-center gap-2"
+                        >
+                            {loading ? <Loader2 className="animate-spin" size={20} /> : null}
+                            {loading ? 'กำลังบันทึก...' : 'บันทึกการแก้ไข'}
                         </button>
                     </div>
                 </div>
@@ -523,37 +596,46 @@ export default function AddServicePage() {
                                     <input
                                         type="number"
                                         value={calcQty}
-                                        onChange={(e) => setCalcQty(Math.max(1, Number(e.target.value)))}
-                                        className="w-full rounded-xl border border-[#eedeef] p-3 text-[#455a64] bg-white focus:outline-none focus:border-purple-300 focus:ring-2 focus:ring-purple-100" />
+                                        onChange={(e) => setCalcQty(Number(e.target.value))}
+                                        className="w-full rounded-xl border border-[#eedeef] p-3 text-[#455a64] bg-white focus:outline-none focus:border-purple-300 focus:ring-2 focus:ring-purple-100"
+                                    />
                                 </div>
 
                                 <div className="space-y-3">
                                     <label className="block text-sm font-bold text-[#455a64]">Option พิเศษ</label>
                                     <div className="space-y-2">
-                                        {specialOptions.map((opt, idx) => {
-                                            const isSelected = selectedExtras.includes(opt.name)
-                                            return (
-                                                <label key={idx} className={`flex items-center justify-between p-3 bg-white rounded-xl border cursor-pointer transition-colors ${isSelected ? 'border-purple-400 bg-purple-50' : 'border-[#eedeef] hover:border-purple-200'}`}>
-                                                    <div className="flex items-center gap-3">
-                                                        <div className={`w-5 h-5 rounded flex items-center justify-center border transition-colors ${isSelected ? 'bg-purple-500 border-purple-500 text-white' : 'border-[#eedeef]'}`}>
-                                                            {isSelected && <Check size={12} strokeWidth={3} />}
-                                                        </div>
-                                                        <input
-                                                            type="checkbox"
-                                                            className="hidden"
-                                                            checked={isSelected}
-                                                            onChange={() => toggleExtra(opt.name)}
-                                                        />
-                                                        <span className="text-[#455a64] text-sm">{opt.name}</span>
+                                        {specialOptions.map((opt, i) => (
+                                            <label
+                                                key={i}
+                                                className="flex items-center justify-between p-3 bg-white rounded-xl border border-[#eedeef] cursor-pointer hover:border-purple-200 transition-colors"
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    <input
+                                                        type="checkbox"
+                                                        className="hidden"
+                                                        checked={selectedExtras.includes(opt.name)}
+                                                        onChange={() => toggleExtra(opt.name)}
+                                                    />
+                                                    <div className={`w-5 h-5 rounded flex items-center justify-center border border-[#eedeef] transition-colors ${selectedExtras.includes(opt.name) ? "bg-purple-500 border-purple-500" : "bg-white"}`}>
+                                                        {selectedExtras.includes(opt.name) && <Check size={12} className="text-white" />}
                                                     </div>
-                                                    <span className="text-green-500 text-sm font-bold">+{opt.price} บาท</span>
-                                                </label>
-                                            )
-                                        })}
-                                        {specialOptions.length === 0 && (
-                                            <p className="text-xs text-[#90a4ae] text-center p-2">ไม่มี Option พิเศษ</p>
-                                        )}
+                                                    <span className="text-[#455a64] text-sm">{opt.name}</span>
+                                                </div>
+                                                <span className="text-green-500 text-sm font-bold">+{opt.price} บาท</span>
+                                            </label>
+                                        ))}
                                     </div>
+                                </div>
+
+                                <div className="flex items-center justify-between p-4 bg-white rounded-2xl border border-[#eedeef]">
+                                    <div>
+                                        <span className="block font-bold text-[#455a64]">งานด่วน</span>
+                                        <span className="text-[11px] text-[#90a4ae]">+50 บาท</span>
+                                    </div>
+                                    <label className="relative inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" className="sr-only peer" />
+                                        <div className="w-11 h-6 bg-[#E0E0E0] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-500"></div>
+                                    </label>
                                 </div>
 
                                 <div className="pt-4 border-t border-dashed border-[#eedeef] space-y-3">
@@ -565,12 +647,10 @@ export default function AddServicePage() {
                                         <span>จำนวน</span>
                                         <span>x {calcQty}</span>
                                     </div>
-                                    {extrasTotal > 0 && (
-                                        <div className="flex justify-between text-purple-500 text-sm font-medium">
-                                            <span>Option พิเศษรวม</span>
-                                            <span>+{extrasTotal.toFixed(2)} บาท</span>
-                                        </div>
-                                    )}
+                                    <div className="flex justify-between text-[#455a64] text-sm font-bold">
+                                        <span>ยอดรวม</span>
+                                        <span>{(basePrice * calcQty).toFixed(2)} บาท</span>
+                                    </div>
                                 </div>
 
                                 <div className="pt-4 border-t border-[#eedeef] flex justify-between items-end">
@@ -590,16 +670,12 @@ export default function AddServicePage() {
                             </h4>
                             <div className="space-y-2">
                                 <div className="flex justify-between text-xs text-[#78909c]">
-                                    <span>ตัวเลือกประเภทสินค้า</span>
-                                    <span className="font-bold text-[#455a64] bg-gray-100 px-2 py-0.5 rounded-md">
-                                        {colorOptions.length + sideOptions.length + sizeOptions.length + thicknessOptions.length}
-                                    </span>
+                                    <span>Option ทั้งหมด</span>
+                                    <span className="font-bold text-[#455a64] bg-gray-100 px-2 py-0.5 rounded-md">{specialOptions.length}</span>
                                 </div>
                                 <div className="flex justify-between text-xs text-[#78909c]">
-                                    <span>Option พิเศษ</span>
-                                    <span className="font-bold text-[#455a64] bg-gray-100 px-2 py-0.5 rounded-md">
-                                        {specialOptions.length}
-                                    </span>
+                                    <span>ประเภทไฟล์รองรับ</span>
+                                    <span className="font-bold text-[#455a64] bg-gray-100 px-2 py-0.5 rounded-md">{fileTypes.length}</span>
                                 </div>
                             </div>
                         </div>
@@ -617,10 +693,10 @@ export default function AddServicePage() {
                         </svg>
                     </div>
                     <div>
-                        <p className="text-sm font-semibold text-gray-700">เพิ่มข้อมูลบริการเรียบร้อยแล้ว!</p>
+                        <p className="text-sm font-semibold text-gray-700">อัปเดตข้อมูลบริการเรียบร้อยแล้ว!</p>
                     </div>
                 </div>
             </div>
-        </div>
+        </div >
     )
 }
