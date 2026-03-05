@@ -50,6 +50,7 @@ export default function OrdersPage() {
     const [isPrintModalOpen, setIsPrintModalOpen] = useState(false)
     const [isCancelConfirmOpen, setIsCancelConfirmOpen] = useState(false)
     const [selectedOrder, setSelectedOrder] = useState<any>(null)
+    const [previewFile, setPreviewFile] = useState<{ url: string, name: string } | null>(null)
 
     useEffect(() => {
         try {
@@ -110,6 +111,7 @@ export default function OrdersPage() {
                         price: order.total_price.toFixed(2),
                         status: order.status,
                         payment_slip_url: order.payment_slip_url,
+                        fileUrl: items.length > 0 ? items[0].file_url : null,
                         items: items, // keep all items for details
                         ...statusInfo
                     }
@@ -338,7 +340,7 @@ export default function OrdersPage() {
                                 <th className="text-left px-8 py-5 text-[11px] font-bold text-[#90a4ae] uppercase tracking-wider">ลูกค้า/ไฟล์งาน</th>
                                 <th className="text-left px-8 py-5 text-[11px] font-bold text-[#90a4ae] uppercase tracking-wider">ยอดรวม</th>
                                 <th className="text-left px-8 py-5 text-[11px] font-bold text-[#90a4ae] uppercase tracking-wider">สถานะการผลิต</th>
-                                <th className="text-right px-8 py-5 text-[11px] font-bold text-[#90a4ae] uppercase tracking-wider">การจัดการ</th>
+                                <th className="text-left px-8 py-5 text-[11px] font-bold text-[#90a4ae] uppercase tracking-wider">การจัดการ</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-[#f0f4f5]">
@@ -359,9 +361,9 @@ export default function OrdersPage() {
                                 filteredOrders.map((order) => (
                                     <tr key={order.id} className="hover:bg-[#fafeff] transition-colors group">
                                         <td className="px-8 py-6">
-                                            <div className="flex flex-col">
-                                                <span className="text-sm font-bold text-[#06B6D4] mb-0.5">{order.id}</span>
-                                                <span className="text-[11px] text-[#90a4ae]">{order.date}</span>
+                                            <div className="flex flex-col whitespace-nowrap">
+                                                <span className="text-[15px] font-bold text-[#06B6D4] mb-1">{order.id}</span>
+                                                <span className="text-[13px] text-[#90a4ae]">{order.date}</span>
                                             </div>
                                         </td>
                                         <td className="px-8 py-6">
@@ -371,10 +373,36 @@ export default function OrdersPage() {
                                                 </div>
                                                 <div className="flex flex-col">
                                                     <span className="text-sm text-[#455a64] font-bold leading-tight mb-1">{order.customer}</span>
-                                                    <div className="flex items-center gap-1.5 group/file cursor-pointer">
-                                                        <Download size={12} className="text-[#90a4ae] group-hover/file:text-[#06B6D4] transition-colors" />
-                                                        <span className="text-[11px] text-[#90a4ae] group-hover/file:text-[#06B6D4] transition-colors">{order.fileName}</span>
-                                                    </div>
+                                                    {order.items && order.items.length > 1 ? (
+                                                        <button
+                                                            onClick={() => openDetailsModal(order)}
+                                                            className="flex items-center gap-1.5 opacity-60 hover:opacity-100 hover:scale-[1.02] transition-all group/items"
+                                                            title="คลิกเพื่อดูรายการไฟล์ทั้งหมด"
+                                                        >
+                                                            <div className="w-5 h-5 rounded-lg bg-[#F0F4F8] group-hover/items:bg-[#06B6D4] group-hover/items:text-white flex items-center justify-center text-[#90a4ae] border border-gray-100 transition-colors">
+                                                                <FileText size={10} />
+                                                            </div>
+                                                            <span className="text-[11px] text-[#90a4ae] group-hover/items:text-[#06B6D4] font-medium group-hover/items:font-bold underline-offset-2 hover:underline">{order.items.length} รายการ</span>
+                                                        </button>
+                                                    ) : order.fileUrl ? (
+                                                        <button
+                                                            onClick={() => setPreviewFile({ url: order.fileUrl, name: order.fileName })}
+                                                            className="flex items-center gap-1.5 group/file cursor-pointer hover:scale-[1.02] transition-transform origin-left text-left"
+                                                            title="คลิกเพื่อดูไฟล์งาน"
+                                                        >
+                                                            <div className="w-5 h-5 rounded-lg bg-gray-50 flex items-center justify-center text-[#90a4ae] group-hover/file:bg-[#06B6D4] group-hover/file:text-white transition-colors shadow-sm border border-gray-100">
+                                                                <Download size={10} />
+                                                            </div>
+                                                            <span className="text-[11px] text-[#455a64] font-medium group-hover/file:text-[#06B6D4] group-hover/file:font-bold transition-all hover:underline underline-offset-2">{order.fileName}</span>
+                                                        </button>
+                                                    ) : (
+                                                        <div className="flex items-center gap-1.5 text-gray-400 opacity-60">
+                                                            <div className="w-5 h-5 rounded-lg bg-gray-50 flex items-center justify-center border border-gray-100">
+                                                                <FileText size={10} />
+                                                            </div>
+                                                            <span className="text-[11px] italic">{order.fileName}</span>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                         </td>
@@ -397,7 +425,7 @@ export default function OrdersPage() {
                                             </div>
                                         </td>
                                         <td className="px-8 py-6">
-                                            <div className="flex items-center justify-end gap-2.5">
+                                            <div className="flex items-center justify-start gap-2.5">
                                                 <div className="flex items-center gap-1">
                                                     <button
                                                         onClick={() => openDetailsModal(order)}
@@ -448,7 +476,7 @@ export default function OrdersPage() {
                 {/* Footer and Pagination */}
                 <div className="px-8 py-6 border-t border-[#f0f4f5] flex flex-col md:flex-row items-center justify-between gap-4">
                     <p className="text-[12px] text-[#90a4ae] font-medium italic">
-                        การเปลี่ยนสถานะจะแจ้งเตือนลูกค้าโดยอัตโนมัติผ่านทางหน้าเว็บและอีเมล
+                        การเปลี่ยนสถานะจะแจ้งเตือนลูกค้าโดยอัตโนมัติผ่านทางหน้าเว็บ
                     </p>
                     <div className="flex items-center gap-2">
                         <button className="px-5 py-2.5 bg-white border border-[#e5e7eb] rounded-xl text-xs font-bold text-[#90a4ae] hover:bg-gray-50 transition-all disabled:opacity-50">
@@ -462,284 +490,366 @@ export default function OrdersPage() {
             </div>
 
             {/* Status Update Modal */}
-            {isUpdateModalOpen && selectedOrder && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-in fade-in duration-300">
-                    <div className="bg-white w-full max-w-[480px] rounded-3xl shadow-2xl animate-in zoom-in-95 duration-300 relative">
-                        <button
-                            onClick={closeAllModals}
-                            className="absolute -top-3 -right-3 z-[60] w-10 h-10 bg-white shadow-xl rounded-full flex items-center justify-center text-[#90a4ae] hover:text-rose-500 hover:scale-110 transition-all border border-[#f0f4f5] group/close"
-                        >
-                            <X size={20} />
-                        </button>
+            {
+                isUpdateModalOpen && selectedOrder && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-in fade-in duration-300">
+                        <div className="bg-white w-full max-w-[480px] rounded-3xl shadow-2xl animate-in zoom-in-95 duration-300 relative">
+                            <button
+                                onClick={closeAllModals}
+                                className="absolute -top-3 -right-3 z-[60] w-10 h-10 bg-white shadow-xl rounded-full flex items-center justify-center text-[#90a4ae] hover:text-rose-500 hover:scale-110 transition-all border border-[#f0f4f5] group/close"
+                            >
+                                <X size={20} />
+                            </button>
 
-                        <div className="flex items-center justify-between p-6">
-                            <div className="flex flex-col">
-                                <h3 className="text-xl font-bold text-[#455a64]">อัปเดตสถานะออเดอร์</h3>
-                                <p className="text-sm text-[#90a4ae] mt-1">ออเดอร์เลขที่ {selectedOrder.id}</p>
+                            <div className="flex items-center justify-between p-6">
+                                <div className="flex flex-col">
+                                    <h3 className="text-xl font-bold text-[#455a64]">อัปเดตสถานะออเดอร์</h3>
+                                    <p className="text-sm text-[#90a4ae] mt-1">ออเดอร์เลขที่ {selectedOrder.id}</p>
+                                </div>
+                                <div className="w-12 h-12 bg-[#E0F7FA] rounded-2xl flex items-center justify-center text-[#06B6D4]">
+                                    <Clock size={24} />
+                                </div>
                             </div>
-                            <div className="w-12 h-12 bg-[#E0F7FA] rounded-2xl flex items-center justify-center text-[#06B6D4]">
-                                <Clock size={24} />
-                            </div>
-                        </div>
 
-                        <div className="p-6 pt-2">
-                            <div className="relative flex flex-col gap-8 ml-4">
-                                {/* Connection Line */}
-                                <div className="absolute left-[13px] top-8 bottom-8 w-0.5 bg-[#f0f4f5] border-l border-dashed border-[#e5e7eb]" />
+                            <div className="p-6 pt-2">
+                                <div className="relative flex flex-col gap-8 ml-4">
+                                    {/* Connection Line */}
+                                    <div className="absolute left-[13px] top-8 bottom-8 w-0.5 bg-[#f0f4f5] border-l border-dashed border-[#e5e7eb]" />
 
-                                {/* Step 1: Current Status */}
-                                <div className="flex flex-col gap-4 relative z-10">
-                                    <div className="flex items-start gap-4">
-                                        <div className="w-7 h-7 rounded-full bg-white border-2 border-[#e5e7eb] flex items-center justify-center text-xs font-bold text-[#90a4ae] shadow-sm">
-                                            {Math.max(1, statusSequence.findIndex(s => s.label === selectedOrder.status) + 1)}
-                                        </div>
-                                        <div className="flex flex-col">
-                                            <p className="text-xs font-medium text-[#90a4ae]">สถานะปัจจุบัน</p>
-                                            <p className="text-sm font-bold text-[#455a64] mt-0.5">{selectedOrder.status}</p>
-                                        </div>
-                                    </div>
-
-                                    {/* Moving Slip Preview here, below Step 1 text */}
-                                    {selectedOrder.status === "รอตรวจสอบสลิป" && (
-                                        <div
-                                            onClick={() => openSlipModal(selectedOrder)}
-                                            className="ml-11 bg-[#FFF9C4] shadow-sm rounded-2xl p-4 border border-gray-100 flex items-center gap-4 group cursor-pointer hover:bg-gray-100 transition-all"
-                                        >
-                                            <div className="w-16 h-16 bg-white rounded-xl border border-gray-200 flex items-center justify-center text-gray-300 group-hover:scale-105 transition-transform overflow-hidden flex-shrink-0">
-                                                {selectedOrder.payment_slip_url ? (
-                                                    // eslint-disable-next-line @next/next/no-img-element
-                                                    <img src={selectedOrder.payment_slip_url} alt="slip" className="w-full h-full object-cover" />
-                                                ) : <Receipt size={24} />}
+                                    {/* Step 1: Current Status */}
+                                    <div className="flex flex-col gap-4 relative z-10">
+                                        <div className="flex items-start gap-4">
+                                            <div className="w-7 h-7 rounded-full bg-white border-2 border-[#e5e7eb] flex items-center justify-center text-xs font-bold text-[#90a4ae] shadow-sm">
+                                                {Math.max(1, statusSequence.findIndex(s => s.label === selectedOrder.status) + 1)}
                                             </div>
                                             <div className="flex flex-col">
-                                                <p className="text-[11px] font-bold text-[#90a4ae] uppercase tracking-wider mb-0.5">หลักฐานการโอนเงิน</p>
-                                                <p className="text-xs text-[#455a64] font-medium">รอการตรวจสอบสลิป... (คลิกดูภาพใหญ่)</p>
+                                                <p className="text-xs font-medium text-[#90a4ae]">สถานะปัจจุบัน</p>
+                                                <p className="text-sm font-bold text-[#455a64] mt-0.5">{selectedOrder.status}</p>
                                             </div>
                                         </div>
-                                    )}
+
+                                        {/* Moving Slip Preview here, below Step 1 text */}
+                                        {selectedOrder.status === "รอตรวจสอบสลิป" && (
+                                            <div
+                                                onClick={() => openSlipModal(selectedOrder)}
+                                                className="ml-11 bg-[#FFF9C4] shadow-sm rounded-2xl p-4 border border-gray-100 flex items-center gap-4 group cursor-pointer hover:bg-gray-100 transition-all"
+                                            >
+                                                <div className="w-16 h-16 bg-white rounded-xl border border-gray-200 flex items-center justify-center text-gray-300 group-hover:scale-105 transition-transform overflow-hidden flex-shrink-0">
+                                                    {selectedOrder.payment_slip_url ? (
+                                                        // eslint-disable-next-line @next/next/no-img-element
+                                                        <img src={selectedOrder.payment_slip_url} alt="slip" className="w-full h-full object-cover" />
+                                                    ) : <Receipt size={24} />}
+                                                </div>
+                                                <div className="flex flex-col">
+                                                    <p className="text-[11px] font-bold text-[#90a4ae] uppercase tracking-wider mb-0.5">หลักฐานการโอนเงิน</p>
+                                                    <p className="text-xs text-[#455a64] font-medium">รอการตรวจสอบสลิป... (คลิกดูภาพใหญ่)</p>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="flex items-start gap-4 relative z-10">
+                                        <div className="w-7 h-7 rounded-full bg-white border-2 border-[#06B6D4] flex items-center justify-center text-xs font-bold text-[#06B6D4] shadow-sm shadow-[#06B6D4]/10">
+                                            {Math.min(statusSequence.length + 1, Math.max(2, statusSequence.findIndex(s => s.label === selectedOrder.status) + 2))}
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <p className="text-xs font-medium text-[#06B6D4]">สถานะถัดไป</p>
+                                            <p className="text-sm font-bold text-[#455a64] mt-0.5">
+                                                {statusSequence[statusSequence.findIndex(s => s.label === selectedOrder.status) + 1]?.label || "เสร็จสิ้น"}
+                                            </p>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div className="flex items-start gap-4 relative z-10">
-                                    <div className="w-7 h-7 rounded-full bg-white border-2 border-[#06B6D4] flex items-center justify-center text-xs font-bold text-[#06B6D4] shadow-sm shadow-[#06B6D4]/10">
-                                        {Math.min(statusSequence.length + 1, Math.max(2, statusSequence.findIndex(s => s.label === selectedOrder.status) + 2))}
+
+                                <div className="mt-8 bg-[#f5fbfe] border border-[#e1f5fe] rounded-2xl p-4 flex gap-3">
+                                    <div className="w-6 h-6 bg-[#06B6D4]/10 text-[#06B6D4] rounded-full flex items-center justify-center flex-shrink-0">
+                                        <FileText size={14} />
                                     </div>
-                                    <div className="flex flex-col">
-                                        <p className="text-xs font-medium text-[#06B6D4]">สถานะถัดไป</p>
-                                        <p className="text-sm font-bold text-[#455a64] mt-0.5">
-                                            {statusSequence[statusSequence.findIndex(s => s.label === selectedOrder.status) + 1]?.label || "เสร็จสิ้น"}
-                                        </p>
-                                    </div>
+                                    <p className="text-xs text-[#78909c] leading-relaxed">
+                                        เมื่อคุณกดยืนยัน ระบบจะบันทึกข้อมูลและส่งการแจ้งเตือนความคืบหน้าให้ {selectedOrder.customer} ทราบทันที
+                                    </p>
                                 </div>
                             </div>
 
-                            <div className="mt-8 bg-[#f5fbfe] border border-[#e1f5fe] rounded-2xl p-4 flex gap-3">
-                                <div className="w-6 h-6 bg-[#06B6D4]/10 text-[#06B6D4] rounded-full flex items-center justify-center flex-shrink-0">
-                                    <FileText size={14} />
-                                </div>
-                                <p className="text-xs text-[#78909c] leading-relaxed">
-                                    เมื่อคุณกดยืนยัน ระบบจะบันทึกข้อมูลและส่งการแจ้งเตือนความคืบหน้าให้ {selectedOrder.customer} ทราบทันที
-                                </p>
-                            </div>
-                        </div>
-
-                        <div className="p-6 flex items-center gap-3">
-                            <button
-                                onClick={handleCancelOrder}
-                                disabled={selectedOrder.status !== "รอตรวจสอบสลิป"} // Can only cancel if checking slip
-                                className={`flex-1 px-6 py-3 border rounded-2xl text-sm font-bold transition-all ${selectedOrder.status !== "รอตรวจสอบสลิป"
-                                    ? "border-gray-100 text-gray-300 cursor-not-allowed bg-gray-50"
-                                    : "border-[#e5e7eb] text-rose-500 hover:bg-rose-50"}`}
-                            >
-                                {selectedOrder.status === "รอตรวจสอบสลิป" ? "สลิปไม่ถูกต้อง" :
-                                    selectedOrder.status === "ยกเลิก" ? "ถูกยกเลิกแล้ว" : "ยืนยันแล้วยกเลิกไม่ได้"}
-                            </button>
-                            <button
-                                onClick={selectedOrder.status === "รอตรวจสอบสลิป" ? handleVerifySlip : handleUpdateStatus}
-                                disabled={selectedOrder.status === "ยกเลิก"}
-                                className={`flex-1 px-6 py-3 rounded-2xl text-sm font-bold transition-all shadow-lg ${selectedOrder.status === "รอตรวจสอบสลิป"
-                                    ? "bg-amber-500 text-white hover:bg-amber-600 shadow-amber-500/20"
-                                    : selectedOrder.status === "ยกเลิก"
-                                        ? "bg-gray-100 text-gray-400 cursor-not-allowed shadow-none"
-                                        : "bg-[#06B6D4] text-white hover:bg-[#0891b2] shadow-[#06B6D4]/20"
-                                    }`}
-                            >
-                                {selectedOrder.status === "รอตรวจสอบสลิป" ? "ตรวจสอบเรียบร้อย" :
-                                    selectedOrder.status === "ยกเลิก" ? "ถูกยกเลิกแล้ว" : "ยืนยันการอัปเดต"}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Details Modal */}
-            {isDetailsModalOpen && selectedOrder && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-in fade-in duration-300">
-                    <div className="bg-white w-full max-w-[550px] rounded-3xl shadow-2xl animate-in zoom-in-95 duration-300 relative overflow-hidden">
-                        <button onClick={closeAllModals} className="absolute top-4 right-4 w-10 h-10 bg-gray-50 rounded-full flex items-center justify-center text-gray-400 hover:text-rose-500 transition-all">
-                            <X size={20} />
-                        </button>
-                        <div className="p-8">
-                            <div className="flex items-center gap-4 mb-8">
-                                <div className="w-14 h-14 bg-[#E0F7FA] rounded-2xl flex items-center justify-center text-[#06B6D4]">
-                                    <Eye size={28} />
-                                </div>
-                                <div>
-                                    <h3 className="text-xl font-bold text-[#455a64]">รายละเอียดออเดอร์</h3>
-                                    <p className="text-sm text-[#90a4ae]">{selectedOrder.id} • {selectedOrder.date}</p>
-                                </div>
-                            </div>
-
-                            <div className="space-y-2">
-                                <div className="bg-gray-50 rounded-2xl p-5 border border-gray-100">
-                                    <p className="text-[11px] font-bold text-[#90a4ae] uppercase tracking-wider mb-3">ข้อมูลลูกค้า</p>
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center text-[#455a64] font-bold shadow-sm">{selectedOrder.customer.charAt(0)}</div>
-                                        <p className="text-sm font-bold text-[#455a64]">{selectedOrder.customer}</p>
-                                    </div>
-                                </div>
-
-                                <div className="bg-gray-50 rounded-2xl p-5 border border-gray-100">
-                                    <p className="text-[11px] font-bold text-[#90a4ae] uppercase tracking-wider mb-3">รายละเอียดเอกสาร</p>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm flex flex-col">
-                                            <span className="text-[10px] font-bold text-[#90a4ae] uppercase">จำนวนหน้า</span>
-                                            <span className="text-sm font-bold text-[#455a64]">42 หน้า</span>
-                                        </div>
-                                        <div className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm flex flex-col">
-                                            <span className="text-[10px] font-bold text-[#90a4ae] uppercase">ประเภทกระดาษ</span>
-                                            <span className="text-sm font-bold text-[#455a64]">A4 (80 แกรม)</span>
-                                        </div>
-                                        <div className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm flex flex-col">
-                                            <span className="text-[10px] font-bold text-[#90a4ae] uppercase">สีการพิมพ์</span>
-                                            <span className="text-sm font-bold text-[#455a64]">ขาว-ดำ</span>
-                                        </div>
-                                        <div className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm flex flex-col">
-                                            <span className="text-[10px] font-bold text-[#90a4ae] uppercase">การเข้าเล่ม</span>
-                                            <span className="text-sm font-bold text-[#455a64]">แม็กมุมซ้าย</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="bg-gray-50 rounded-2xl p-5 border border-gray-100">
-                                    <p className="text-[11px] font-bold text-[#90a4ae] uppercase tracking-wider mb-3">รายการงานพิมพ์</p>
-                                    <div className="flex items-center justify-between p-3 bg-white rounded-xl border border-gray-100 shadow-sm">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 bg-sky-50 text-sky-500 rounded-lg flex items-center justify-center"><FileText size={16} /></div>
-                                            <p className="text-sm font-medium text-[#455a64] truncate max-w-[200px]">{selectedOrder.fileName}</p>
-                                        </div>
-                                        <p className="text-sm font-black text-[#06B6D4]">฿{selectedOrder.price}</p>
-                                    </div>
-                                </div>
-
-                                <div className="flex items-center justify-between pt-4 border-t border-dashed border-gray-200">
-                                    <p className="text-sm font-bold text-[#90a4ae]">ราคาสุทธิ</p>
-                                    <p className="text-xl font-black text-[#455a64]">฿{selectedOrder.price}</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Payment Slip Modal */}
-            {isSlipModalOpen && selectedOrder && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-in fade-in duration-300">
-                    <div className="bg-white w-full max-w-[420px] rounded-3xl shadow-2xl animate-in zoom-in-95 duration-300 relative overflow-hidden">
-                        <button onClick={closeAllModals} className="absolute top-4 right-4 z-10 w-10 h-10 bg-white/80 backdrop-blur shadow-md rounded-full flex items-center justify-center text-gray-500 hover:text-rose-500 transition-all">
-                            <X size={20} />
-                        </button>
-                        <div className="p-6">
-                            <h3 className="text-lg font-bold text-[#455a64] mb-4 flex items-center gap-2">
-                                <Receipt size={20} className="text-amber-500" />
-                                หลักฐานการโอนเงิน
-                            </h3>
-                            <div className="aspect-[3/4] rounded-2xl bg-gray-100 border border-gray-200 flex flex-col items-center justify-center gap-3 overflow-hidden group">
-                                {selectedOrder.payment_slip_url ? (
-                                    <div className="relative w-full h-full">
-                                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                                        <img src={selectedOrder.payment_slip_url} alt="Slip" className="w-full h-full object-contain bg-black/5" />
-                                    </div>
-                                ) : (
-                                    <>
-                                        <div className="w-16 h-16 bg-white rounded-full shadow-sm flex items-center justify-center text-gray-300 group-hover:scale-110 transition-transform">
-                                            <Receipt size={32} />
-                                        </div>
-                                        <p className="text-sm font-medium text-gray-400 italic">ไม่พบรูปภาพสลิป</p>
-                                    </>
-                                )}
-                            </div>
-                            <div className="mt-6 flex gap-3">
+                            <div className="p-6 flex items-center gap-3">
                                 <button
                                     onClick={handleCancelOrder}
-                                    disabled={selectedOrder.status !== "รอตรวจสอบสลิป"}
-                                    className={`flex-1 py-3.5 border rounded-2xl text-sm font-bold transition-all ${selectedOrder.status !== "รอตรวจสอบสลิป"
-                                        ? "bg-gray-50 border-gray-100 text-gray-300 cursor-not-allowed"
-                                        : "border-[#e5e7eb] text-rose-500 hover:bg-rose-50"
-                                        }`}
+                                    disabled={selectedOrder.status !== "รอตรวจสอบสลิป"} // Can only cancel if checking slip
+                                    className={`flex-1 px-6 py-3 border rounded-2xl text-sm font-bold transition-all ${selectedOrder.status !== "รอตรวจสอบสลิป"
+                                        ? "border-gray-100 text-gray-300 cursor-not-allowed bg-gray-50"
+                                        : "border-[#e5e7eb] text-rose-500 hover:bg-rose-50"}`}
                                 >
-                                    สลิปไม่ถูกต้อง
+                                    {selectedOrder.status === "รอตรวจสอบสลิป" ? "สลิปไม่ถูกต้อง" :
+                                        selectedOrder.status === "ยกเลิก" ? "ถูกยกเลิกแล้ว" : "ยืนยันแล้วยกเลิกไม่ได้"}
                                 </button>
                                 <button
-                                    onClick={handleVerifySlip}
-                                    disabled={selectedOrder.status !== "รอตรวจสอบสลิป"}
-                                    className={`flex-[2] py-3.5 rounded-2xl text-sm font-bold transition-all shadow-lg ${selectedOrder.status !== "รอตรวจสอบสลิป"
-                                        ? "bg-gray-100 text-gray-400 cursor-not-allowed shadow-none"
-                                        : "bg-amber-500 text-white hover:bg-amber-600 shadow-amber-500/20"
+                                    onClick={selectedOrder.status === "รอตรวจสอบสลิป" ? handleVerifySlip : handleUpdateStatus}
+                                    disabled={selectedOrder.status === "ยกเลิก"}
+                                    className={`flex-1 px-6 py-3 rounded-2xl text-sm font-bold transition-all shadow-lg ${selectedOrder.status === "รอตรวจสอบสลิป"
+                                        ? "bg-amber-500 text-white hover:bg-amber-600 shadow-amber-500/20"
+                                        : selectedOrder.status === "ยกเลิก"
+                                            ? "bg-gray-100 text-gray-400 cursor-not-allowed shadow-none"
+                                            : "bg-[#06B6D4] text-white hover:bg-[#0891b2] shadow-[#06B6D4]/20"
                                         }`}
                                 >
-                                    {selectedOrder.status === "รอตรวจสอบสลิป" ? "ตรวจสอบเรียบร้อย" : "ตรวจสอบแล้ว"}
+                                    {selectedOrder.status === "รอตรวจสอบสลิป" ? "ตรวจสอบเรียบร้อย" :
+                                        selectedOrder.status === "ยกเลิก" ? "ถูกยกเลิกแล้ว" : "ยืนยันการอัปเดต"}
                                 </button>
                             </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
+
+            {/* Details Modal */}
+            {
+                isDetailsModalOpen && selectedOrder && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-in fade-in duration-300">
+                        <div className="bg-white w-full max-w-[550px] rounded-3xl shadow-2xl animate-in zoom-in-95 duration-300 relative overflow-hidden">
+                            <button onClick={closeAllModals} className="absolute top-4 right-4 w-10 h-10 bg-gray-50 rounded-full flex items-center justify-center text-gray-400 hover:text-rose-500 transition-all">
+                                <X size={20} />
+                            </button>
+                            <div className="p-8">
+                                <div className="flex items-center gap-4 mb-8">
+                                    <div className="w-14 h-14 bg-[#E0F7FA] rounded-2xl flex items-center justify-center text-[#06B6D4]">
+                                        <Eye size={28} />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-xl font-bold text-[#455a64]">รายละเอียดออเดอร์</h3>
+                                        <p className="text-sm text-[#90a4ae]">{selectedOrder.id} • {selectedOrder.date}</p>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <div className="bg-gray-50 rounded-2xl p-5 border border-gray-100">
+                                        <p className="text-[11px] font-bold text-[#90a4ae] uppercase tracking-wider mb-3">ข้อมูลลูกค้า</p>
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center text-[#455a64] font-bold shadow-sm">{selectedOrder.customer.charAt(0)}</div>
+                                            <p className="text-sm font-bold text-[#455a64]">{selectedOrder.customer}</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-4 max-h-[50vh] overflow-y-auto pr-2 custom-scrollbar">
+                                        {selectedOrder.items?.map((item: any, index: number) => (
+                                            <div key={item.id || index} className="bg-gray-50 rounded-2xl p-5 border border-gray-100">
+                                                <div className="flex items-center gap-3 mb-4">
+                                                    <div className="w-8 h-8 bg-sky-50 text-sky-500 rounded-lg flex items-center justify-center shrink-0">
+                                                        <FileText size={16} />
+                                                    </div>
+                                                    {item.file_url ? (
+                                                        <button
+                                                            onClick={() => setPreviewFile({ url: item.file_url, name: item.file_name })}
+                                                            className="flex-1 text-sm font-bold text-[#455a64] truncate hover:text-[#06B6D4] hover:underline decoration-2 underline-offset-4 transition-all flex items-center gap-2 group/modal-file text-left"
+                                                            title={item.file_name}
+                                                        >
+                                                            <span>{item.file_name}</span>
+                                                            <Download size={14} className="opacity-0 group-hover/modal-file:opacity-100 transition-opacity" />
+                                                        </button>
+                                                    ) : (
+                                                        <p className="flex-1 text-sm font-bold text-[#455a64] truncate" title={item.file_name}>
+                                                            {item.file_name}
+                                                        </p>
+                                                    )}
+                                                </div>
+
+                                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+                                                    <div className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm flex flex-col">
+                                                        <span className="text-[10px] font-bold text-[#90a4ae] uppercase">จำนวนหน้า</span>
+                                                        <span className="text-xs font-bold text-[#455a64]">{item.page_count} หน้า</span>
+                                                    </div>
+                                                    <div className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm flex flex-col">
+                                                        <span className="text-[10px] font-bold text-[#90a4ae] uppercase">ประเภท</span>
+                                                        <span className="text-xs font-bold text-[#455a64]">{item.document_type || 'A4'}</span>
+                                                    </div>
+                                                    <div className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm flex flex-col">
+                                                        <span className="text-[10px] font-bold text-[#90a4ae] uppercase">สีการพิมพ์</span>
+                                                        <span className="text-xs font-bold text-[#455a64]">{item.document_detail || 'ขาว-ดำ'}</span>
+                                                    </div>
+                                                    <div className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm flex flex-col">
+                                                        <span className="text-[10px] font-bold text-[#90a4ae] uppercase">การเข้าเล่ม</span>
+                                                        <span className="text-xs font-bold text-[#455a64] truncate" title={item.extra_option}>{item.extra_option || '-'}</span>
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex items-center justify-between pt-3 border-t border-gray-200/60">
+                                                    <p className="text-xs font-semibold text-gray-500">จำนวน: {item.quantity} ชุด</p>
+                                                    <p className="text-sm font-black text-[#06B6D4]">฿{item.total_price?.toFixed(2) || '0.00'}</p>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    <div className="mt-6 flex items-center justify-between pt-4 border-t border-dashed border-gray-200">
+                                        <p className="text-sm font-bold text-[#90a4ae]">ราคาสุทธิ</p>
+                                        <p className="text-2xl font-black text-[#06B6D4]">฿{selectedOrder.price}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
+
+            {/* Payment Slip Modal */}
+            {
+                isSlipModalOpen && selectedOrder && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-in fade-in duration-300">
+                        <div className="bg-white w-full max-w-[420px] rounded-3xl shadow-2xl animate-in zoom-in-95 duration-300 relative overflow-hidden">
+                            <button onClick={closeAllModals} className="absolute top-4 right-4 z-10 w-10 h-10 bg-white/80 backdrop-blur shadow-md rounded-full flex items-center justify-center text-gray-500 hover:text-rose-500 transition-all">
+                                <X size={20} />
+                            </button>
+                            <div className="p-6">
+                                <h3 className="text-lg font-bold text-[#455a64] mb-4 flex items-center gap-2">
+                                    <Receipt size={20} className="text-amber-500" />
+                                    หลักฐานการโอนเงิน
+                                </h3>
+                                <div className="aspect-[3/4] rounded-2xl bg-gray-100 border border-gray-200 flex flex-col items-center justify-center gap-3 overflow-hidden group">
+                                    {selectedOrder.payment_slip_url ? (
+                                        <div className="relative w-full h-full">
+                                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                                            <img src={selectedOrder.payment_slip_url} alt="Slip" className="w-full h-full object-contain bg-black/5" />
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <div className="w-16 h-16 bg-white rounded-full shadow-sm flex items-center justify-center text-gray-300 group-hover:scale-110 transition-transform">
+                                                <Receipt size={32} />
+                                            </div>
+                                            <p className="text-sm font-medium text-gray-400 italic">ไม่พบรูปภาพสลิป</p>
+                                        </>
+                                    )}
+                                </div>
+                                <div className="mt-6 flex gap-3">
+                                    <button
+                                        onClick={handleCancelOrder}
+                                        disabled={selectedOrder.status !== "รอตรวจสอบสลิป"}
+                                        className={`flex-1 py-3.5 border rounded-2xl text-sm font-bold transition-all ${selectedOrder.status !== "รอตรวจสอบสลิป"
+                                            ? "bg-gray-50 border-gray-100 text-gray-300 cursor-not-allowed"
+                                            : "border-[#e5e7eb] text-rose-500 hover:bg-rose-50"
+                                            }`}
+                                    >
+                                        สลิปไม่ถูกต้อง
+                                    </button>
+                                    <button
+                                        onClick={handleVerifySlip}
+                                        disabled={selectedOrder.status !== "รอตรวจสอบสลิป"}
+                                        className={`flex-[2] py-3.5 rounded-2xl text-sm font-bold transition-all shadow-lg ${selectedOrder.status !== "รอตรวจสอบสลิป"
+                                            ? "bg-gray-100 text-gray-400 cursor-not-allowed shadow-none"
+                                            : "bg-amber-500 text-white hover:bg-amber-600 shadow-amber-500/20"
+                                            }`}
+                                    >
+                                        {selectedOrder.status === "รอตรวจสอบสลิป" ? "ตรวจสอบเรียบร้อย" : "ตรวจสอบแล้ว"}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
 
             {/* Print Modal */}
-            {isPrintModalOpen && selectedOrder && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-in fade-in duration-300">
-                    <div className="bg-white w-full max-w-[500px] rounded-3xl shadow-2xl animate-in zoom-in-95 duration-300 relative overflow-hidden">
-                        <button onClick={closeAllModals} className="absolute top-4 right-4 w-10 h-10 bg-white shadow-sm rounded-full flex items-center justify-center text-gray-400 hover:text-rose-500 transition-all">
-                            <X size={20} />
-                        </button>
-                        <div className="p-8">
-                            <div className="flex items-center gap-3 mb-8">
-                                <div className="w-12 h-12 bg-sky-50 rounded-2xl flex items-center justify-center text-[#06B6D4]">
-                                    <Printer size={24} />
+            {
+                isPrintModalOpen && selectedOrder && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-in fade-in duration-300">
+                        <div className="bg-white w-full max-w-[500px] rounded-3xl shadow-2xl animate-in zoom-in-95 duration-300 relative overflow-hidden">
+                            <button onClick={closeAllModals} className="absolute top-4 right-4 w-10 h-10 bg-white shadow-sm rounded-full flex items-center justify-center text-gray-400 hover:text-rose-500 transition-all">
+                                <X size={20} />
+                            </button>
+                            <div className="p-8">
+                                <div className="flex items-center gap-3 mb-8">
+                                    <div className="w-12 h-12 bg-sky-50 rounded-2xl flex items-center justify-center text-[#06B6D4]">
+                                        <Printer size={24} />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-xl font-bold text-[#455a64]">พิมพ์ใบสั่งงาน</h3>
+                                        <p className="text-sm text-[#90a4ae]">เตรียมพิมพ์ {selectedOrder.id}</p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <h3 className="text-xl font-bold text-[#455a64]">พิมพ์ใบสั่งงาน</h3>
-                                    <p className="text-sm text-[#90a4ae]">เตรียมพิมพ์ {selectedOrder.id}</p>
+
+                                <div className="border-2 border-dashed border-gray-100 rounded-3xl p-6 bg-gray-50/50">
+                                    <div className="flex justify-between mb-4">
+                                        <span className="text-xs font-bold text-gray-400 uppercase">ไฟล์งาน</span>
+                                        <span className="text-sm font-bold text-[#455a64]">{selectedOrder.fileName}</span>
+                                    </div>
+                                    <div className="flex justify-between mb-4">
+                                        <span className="text-xs font-bold text-gray-400 uppercase">ลูกค้า</span>
+                                        <span className="text-sm font-bold text-[#455a64]">{selectedOrder.customer}</span>
+                                    </div>
+                                    <div className="flex justify-between pt-4 border-t border-gray-200">
+                                        <span className="text-sm font-black text-[#455a64]">รวมทั้งสิ้น</span>
+                                        <span className="text-lg font-black text-[#06B6D4]">฿{selectedOrder.price}</span>
+                                    </div>
+                                </div>
+
+                                <div className="mt-8 flex gap-3">
+                                    <button
+                                        onClick={() => { window.print(); closeAllModals(); }}
+                                        disabled={selectedOrder.status === "รอตรวจสอบสลิป"}
+                                        className={`flex-1 py-3.5 rounded-2xl text-sm font-bold transition-all flex items-center justify-center gap-2 shadow-lg ${selectedOrder.status === "รอตรวจสอบสลิป"
+                                            ? "bg-gray-100 text-gray-400 cursor-not-allowed shadow-none"
+                                            : "bg-[#455a64] text-white hover:bg-[#37474f] shadow-gray-200"
+                                            }`}
+                                    >
+                                        <Printer size={18} />
+                                        {selectedOrder.status === "รอตรวจสอบสลิป" ? "ต้องตรวจสอบสลิปก่อนเริ่มพิมพ์" : "ยืนยันส่งพิมพ์"}
+                                    </button>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                )
+            }
 
-                            <div className="border-2 border-dashed border-gray-100 rounded-3xl p-6 bg-gray-50/50">
-                                <div className="flex justify-between mb-4">
-                                    <span className="text-xs font-bold text-gray-400 uppercase">ไฟล์งาน</span>
-                                    <span className="text-sm font-bold text-[#455a64]">{selectedOrder.fileName}</span>
+            {/* File Preview Modal */}
+            {previewFile && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-300">
+                    <div className="bg-white w-full max-w-5xl h-[90vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col relative animate-in zoom-in-95 duration-300">
+                        {/* Header */}
+                        <div className="p-4 border-b flex items-center justify-between bg-white">
+                            <div className="flex items-center gap-4">
+                                <div className="w-10 h-10 rounded-xl bg-[#E0F7FA] flex items-center justify-center text-[#06B6D4]">
+                                    <FileText size={20} />
                                 </div>
-                                <div className="flex justify-between mb-4">
-                                    <span className="text-xs font-bold text-gray-400 uppercase">ลูกค้า</span>
-                                    <span className="text-sm font-bold text-[#455a64]">{selectedOrder.customer}</span>
-                                </div>
-                                <div className="flex justify-between pt-4 border-t border-gray-200">
-                                    <span className="text-sm font-black text-[#455a64]">รวมทั้งสิ้น</span>
-                                    <span className="text-lg font-black text-[#06B6D4]">฿{selectedOrder.price}</span>
+                                <div className="flex flex-col">
+                                    <h3 className="text-sm font-bold text-[#455a64] truncate max-w-[300px] md:max-w-[500px]">
+                                        {previewFile.name}
+                                    </h3>
+                                    <p className="text-[11px] text-[#90a4ae] font-medium">แสดงตัวอย่างไฟล์งาน</p>
                                 </div>
                             </div>
-
-                            <div className="mt-8 flex gap-3">
-                                <button
-                                    onClick={() => { window.print(); closeAllModals(); }}
-                                    disabled={selectedOrder.status === "รอตรวจสอบสลิป"}
-                                    className={`flex-1 py-3.5 rounded-2xl text-sm font-bold transition-all flex items-center justify-center gap-2 shadow-lg ${selectedOrder.status === "รอตรวจสอบสลิป"
-                                        ? "bg-gray-100 text-gray-400 cursor-not-allowed shadow-none"
-                                        : "bg-[#455a64] text-white hover:bg-[#37474f] shadow-gray-200"
-                                        }`}
+                            <div className="flex items-center gap-3">
+                                <a
+                                    href={previewFile.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="hidden md:flex items-center gap-2 px-4 py-2 text-xs font-bold text-[#455a64] bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-all shrink-0"
                                 >
-                                    <Printer size={18} />
-                                    {selectedOrder.status === "รอตรวจสอบสลิป" ? "ต้องตรวจสอบสลิปก่อนเริ่มพิมพ์" : "ยืนยันส่งพิมพ์"}
+                                    <Eye size={14} />
+                                    เปิดในแท็บใหม่
+                                </a>
+                                <button
+                                    onClick={() => setPreviewFile(null)}
+                                    className="w-10 h-10 bg-gray-50 border border-gray-100 rounded-xl flex items-center justify-center text-gray-400 hover:text-rose-500 hover:bg-rose-50 transition-all active:scale-95"
+                                >
+                                    <X size={20} />
                                 </button>
                             </div>
+                        </div>
+
+                        <div className="flex-1 bg-gray-50 overflow-hidden relative flex items-center justify-center">
+                            {(previewFile.url.toLowerCase().includes('.pdf') || previewFile.name.toLowerCase().endsWith('.pdf')) ? (
+                                <iframe
+                                    src={`${previewFile.url}#toolbar=0&navpanes=0&scrollbar=1`}
+                                    className="w-full h-full border-0"
+                                    title="PDF Preview"
+                                />
+                            ) : (
+                                <div className="p-4 w-full h-full flex items-center justify-center">
+                                    <img
+                                        src={previewFile.url}
+                                        alt="Preview"
+                                        className="max-w-full max-h-full object-contain rounded-lg shadow-sm bg-white"
+                                    />
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

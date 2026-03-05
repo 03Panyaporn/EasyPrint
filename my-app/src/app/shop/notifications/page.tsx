@@ -9,80 +9,124 @@ import {
     Check,
     XCircle,
     CheckCircle2,
-    User
+    User,
+    ChevronRight
 } from "lucide-react"
 
-// Initial dummy data matching the screenshot
-const initialNotifications = [
-    {
-        id: 1,
-        type: "order",
-        title: "ได้รับคำสั่งซื้อใหม่",
-        description: "คำสั่งซื้อ #ORD005 จาก ภานุวัฒน์ - พิมพ์สี 200 แผ่น",
-        time: "2 ชั่วโมงที่แล้ว",
-        unread: true,
-        icon: ShoppingCart,
-        iconBg: "bg-blue-50/80",
-        iconColor: "text-blue-500",
-    },
-    {
-        id: 2,
-        type: "message",
-        title: "ข้อความใหม่",
-        description: "สมชาย ส่งข้อความถึงคุณ",
-        time: "2 ชั่วโมงที่แล้ว",
-        unread: true,
-        icon: MessageSquare,
-        iconBg: "bg-purple-50/80",
-        iconColor: "text-purple-500",
-    },
-    {
-        id: 3,
-        type: "payment",
-        title: "ได้รับการชำระเงิน",
-        description: "ได้รับการชำระเงินจำนวน 350.00 บาท สำหรับคำสั่งซื้อ #ORD002",
-        time: "3 ชั่วโมงที่แล้ว",
-        unread: false,
-        icon: DollarSign,
-        iconBg: "bg-green-50/80",
-        iconColor: "text-green-500",
-    },
-    {
-        id: 4,
-        type: "order",
-        title: "ได้รับคำสั่งซื้อใหม่",
-        description: "คำสั่งซื้อ #ORD001 จาก สมชาย - พิมพ์สี 50 แผ่น",
-        time: "4 ชั่วโมงที่แล้ว",
-        unread: false,
-        icon: ShoppingCart,
-        iconBg: "bg-blue-50/80",
-        iconColor: "text-blue-500",
-    }
-]
+import { useEffect } from "react"
+import { supabase } from "@/lib/supabase"
+import { useRouter } from "next/navigation"
+
+// We will fetch data dynamically.
+const STORAGE_KEY_READ = 'easyprint_notifications_read';
+const STORAGE_KEY_DEL = 'easyprint_notifications_deleted';
 
 export default function NotificationsPage() {
-    const [notifications, setNotifications] = useState(initialNotifications)
+    const router = useRouter()
+    const [notifications, setNotifications] = useState<any[]>([])
     const [filter, setFilter] = useState<"all" | "unread">("all")
+    const [readIds, setReadIds] = useState<string[]>([])
+    const [deletedIds, setDeletedIds] = useState<string[]>([])
+    const [isLoading, setIsLoading] = useState(true)
 
-    const handleMarkAsRead = (id: number) => {
-        setNotifications(notifications.map(n =>
-            n.id === id ? { ...n, unread: false } : n
-        ))
+    useEffect(() => {
+        const savedRead = localStorage.getItem(STORAGE_KEY_READ)
+        if (savedRead) setReadIds(JSON.parse(savedRead))
+
+        const savedDel = localStorage.getItem(STORAGE_KEY_DEL)
+        if (savedDel) setDeletedIds(JSON.parse(savedDel))
+    }, [])
+
+    const fetchOrdersAsNotifications = async () => {
+        try {
+            const { data, error } = await supabase
+                .from('orders')
+                .select(`id, created_at, status, order_items(file_name, quantity)`)
+                .order('created_at', { ascending: false });
+
+            if (data && !error) {
+                const notifs = data
+                    .filter(o => o.status === 'รอตรวจสอบสลิป' || o.status === 'ยกเลิก')
+                    .map(order => {
+                        const isCancel = order.status === 'ยกเลิก';
+                        const notifId = `${order.id}-${order.status}`; // Unique ID for event
+
+                        const items = order.order_items || [];
+                        const itemCount = items.length;
+
+                        const dateStr = new Date(order.created_at).toISOString().split('T')[0].replace(/-/g, '');
+                        const shortId = `ORD-${dateStr}-${order.id.split('-')[0].substring(0, 4).toUpperCase()}`;
+
+                        // Calculate time difference
+                        const timeDiff = Date.now() - new Date(order.created_at).getTime();
+                        const hours = Math.floor(timeDiff / (1000 * 60 * 60));
+                        const minutes = Math.floor((timeDiff / (1000 * 60)) % 60);
+                        const timeStr = hours > 0 ? `${hours} ชั่วโมงที่แล้ว` : minutes > 0 ? `${minutes} นาทีที่แล้ว` : `เพิ่งเริ่มต้น`;
+
+                        return {
+                            id: notifId,
+                            realOrderId: order.id,
+                            type: isCancel ? "cancel" : "order",
+                            title: isCancel ? "คำสั่งซื้อถูกยกเลิก" : "ได้รับคำสั่งซื้อใหม่",
+                            description: isCancel ? `คำสั่งซื้อ ${shortId} ถูกลูกค้ายกเลิกแล้ว` : `คำสั่งซื้อ ${shortId} จากลูกค้า - มีสินค้ารวม ${itemCount} รายการ`,
+                            time: timeStr,
+                            icon: isCancel ? XCircle : ShoppingCart,
+                            iconBg: isCancel ? "bg-red-50/80" : "bg-blue-50/80",
+                            iconColor: isCancel ? "text-red-500" : "text-blue-500",
+                        }
+                    });
+                setNotifications(notifs);
+            }
+        } catch (error) {
+            console.error("Failed to fetch notifications:", error);
+        } finally {
+            setIsLoading(false);
+        }
     }
 
-    const handleDelete = (id: number) => {
-        setNotifications(notifications.filter(n => n.id !== id))
+    useEffect(() => {
+        fetchOrdersAsNotifications();
+
+        const channel = supabase
+            .channel('notifications_orders_updater')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
+                fetchOrdersAsNotifications();
+            })
+            .subscribe()
+
+        return () => { channel.unsubscribe() }
+    }, [])
+
+    const handleMarkAsRead = (id: string) => {
+        if (!readIds.includes(id)) {
+            const next = [...readIds, id];
+            setReadIds(next);
+            localStorage.setItem(STORAGE_KEY_READ, JSON.stringify(next));
+        }
     }
+
+    const handleDelete = (id: string) => {
+        if (!deletedIds.includes(id)) {
+            const next = [...deletedIds, id];
+            setDeletedIds(next);
+            localStorage.setItem(STORAGE_KEY_DEL, JSON.stringify(next));
+        }
+    }
+
+    const unreadCount = notifications.filter(n => !readIds.includes(n.id) && !deletedIds.includes(n.id)).length
 
     const handleMarkAllRead = () => {
-        setNotifications(notifications.map(n => ({ ...n, unread: false })))
+        const remaining = notifications.filter(n => !deletedIds.includes(n.id)).map(n => n.id);
+        const combined = Array.from(new Set([...readIds, ...remaining]));
+        setReadIds(combined);
+        localStorage.setItem(STORAGE_KEY_READ, JSON.stringify(combined));
     }
 
-    const unreadCount = notifications.filter(n => n.unread).length
-
     const filteredNotifications = notifications.filter(n => {
-        if (filter === "unread") return n.unread
-        return true
+        if (deletedIds.includes(n.id)) return false;
+        const isUnread = !readIds.includes(n.id);
+        if (filter === "unread") return isUnread;
+        return true;
     })
 
     return (
@@ -145,7 +189,13 @@ export default function NotificationsPage() {
                         return (
                             <div
                                 key={notification.id}
-                                className={`bg-white rounded-[14px] p-5 border shadow-sm flex items-center justify-between transition-all hover:-translate-y-0.5 hover:shadow-md ${notification.unread ? 'border-l-[5px] border-l-[#1d4ed8] border-y-gray-100 border-r-gray-100' : 'border-gray-100 border-l-[5px] border-l-transparent'}`}
+                                onClick={() => {
+                                    handleMarkAsRead(notification.id);
+                                    if (notification.type === 'order' || notification.type === 'cancel') {
+                                        router.push(`/shop/orders?highlight=${notification.realOrderId}`);
+                                    }
+                                }}
+                                className={`bg-white rounded-[14px] p-5 border shadow-sm flex items-center justify-between transition-all hover:-translate-y-0.5 hover:shadow-md cursor-pointer ${!readIds.includes(notification.id) ? 'border-l-[5px] border-l-[#1d4ed8] border-y-gray-100 border-r-gray-100' : 'border-gray-100 border-l-[5px] border-l-transparent'}`}
                             >
                                 <div className="flex items-center gap-5 ml-1">
                                     <div className={`w-[50px] h-[50px] rounded-[14px] flex items-center justify-center ${notification.iconBg} ${notification.iconColor}`}>
@@ -160,10 +210,11 @@ export default function NotificationsPage() {
                                     </div>
                                 </div>
 
-                                <div className="flex items-center gap-4">
-                                    {notification.unread && (
+                                <div className="flex items-center gap-4 pl-4 border-l border-gray-100">
+                                    <ChevronRight size={18} className="text-gray-300 group-hover:text-[#1d4ed8] transition-colors" />
+                                    {(!readIds.includes(notification.id)) && (
                                         <button
-                                            onClick={() => handleMarkAsRead(notification.id)}
+                                            onClick={(e) => { e.stopPropagation(); handleMarkAsRead(notification.id); }}
                                             className="p-2 transition-all group/dot flex items-center justify-center w-10 h-10 hover:bg-blue-50/50 rounded-full"
                                             title="ทำเครื่องหมายว่าอ่านแล้ว"
                                         >
@@ -171,7 +222,7 @@ export default function NotificationsPage() {
                                         </button>
                                     )}
                                     <button
-                                        onClick={() => handleDelete(notification.id)}
+                                        onClick={(e) => { e.stopPropagation(); handleDelete(notification.id); }}
                                         className="text-[#ef4444] hover:bg-red-50/50 p-1.5 rounded-full transition-colors"
                                         title="ลบการแจ้งเตือน"
                                     >

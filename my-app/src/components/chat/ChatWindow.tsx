@@ -38,15 +38,17 @@ interface ChatWindowProps {
     senderType: 'customer' | 'merchant'
     title: string
     hideSidebar?: boolean
+    initialMessage?: string
 }
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
 
-export default function ChatWindow({ roomId: initialRoomId, senderType, title: initialTitle, hideSidebar = false }: ChatWindowProps) {
+export default function ChatWindow({ roomId: initialRoomId, senderType, title: initialTitle, hideSidebar = false, initialMessage }: ChatWindowProps) {
     const [activeRoomId, setActiveRoomId] = useState(initialRoomId)
     const [rooms, setRooms] = useState<ChatRoom[]>([])
     const [messages, setMessages] = useState<Message[]>([])
     const [newMessage, setNewMessage] = useState('')
+    const [suggestionText, setSuggestionText] = useState(initialMessage || '')
     const [isLoading, setIsLoading] = useState(true)
     const [isLoadingRooms, setIsLoadingRooms] = useState(true)
     const [isSending, setIsSending] = useState(false)
@@ -204,9 +206,11 @@ export default function ChatWindow({ roomId: initialRoomId, senderType, title: i
         setFilePreview(null)
     }
 
-    const handleSendMessage = async (e: React.FormEvent) => {
-        e.preventDefault()
-        if (!newMessage.trim() && !selectedFile || isSending) return
+    const handleSendMessage = async (e?: React.FormEvent, overrideText?: string) => {
+        if (e) e.preventDefault()
+
+        const textToSend = overrideText !== undefined ? overrideText : newMessage;
+        if (!textToSend.trim() && !selectedFile || isSending) return
 
         const user = JSON.parse(sessionStorage.getItem('user') || '{}')
         if (!user.id) return
@@ -242,7 +246,7 @@ export default function ChatWindow({ roomId: initialRoomId, senderType, title: i
                     room_id: activeRoomId,
                     sender_id: user.id,
                     sender_type: senderType,
-                    content: newMessage || undefined,
+                    content: textToSend || undefined,
                     file_url,
                     file_name,
                     file_type,
@@ -250,7 +254,9 @@ export default function ChatWindow({ roomId: initialRoomId, senderType, title: i
             })
 
             if (res.ok) {
-                setNewMessage('')
+                if (overrideText === undefined) {
+                    setNewMessage('')
+                }
                 clearSelectedFile()
             }
         } catch (err) {
@@ -457,6 +463,48 @@ export default function ChatWindow({ roomId: initialRoomId, senderType, title: i
                             </button>
                         </div>
                     )}
+
+                    {/* Suggestion Bubble */}
+                    {suggestionText && (
+                        <div className="mb-4 bg-white border border-[#06B6D4]/20 rounded-[20px] p-4 shadow-lg shadow-[#06B6D4]/5 relative overflow-hidden group animate-in slide-in-from-bottom-2 fade-in duration-300">
+                            <div className="absolute -top-10 -right-10 w-32 h-32 bg-gradient-to-br from-[#06B6D4]/10 to-transparent rounded-full pointer-events-none" />
+                            <div className="flex items-start gap-4 p-1">
+                                <div className="w-10 h-10 bg-gradient-to-br from-[#06B6D4] to-cyan-400 rounded-2xl flex items-center justify-center text-white shrink-0 shadow-sm">
+                                    <MessageSquare size={18} fill="currentColor" className="opacity-80" />
+                                </div>
+                                <div className="flex-1">
+                                    <p className="text-[11px] font-black tracking-widest text-[#06B6D4] uppercase mb-1 flex items-center gap-1.5">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-[#06B6D4] animate-pulse" />
+                                        คำแนะนำข้อความ
+                                    </p>
+                                    <p className="text-[13px] font-medium text-gray-700 whitespace-pre-wrap leading-relaxed bg-gray-50/50 p-3 rounded-xl border border-gray-100/50">
+                                        {suggestionText}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="flex justify-end gap-2 mt-3 pt-3 border-t border-gray-100">
+                                <button
+                                    onClick={() => setSuggestionText('')}
+                                    className="px-4 py-2 text-xs font-bold text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-xl transition-all active:scale-95"
+                                >
+                                    ปิดทิ้ง
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        handleSendMessage(undefined, suggestionText);
+                                        setSuggestionText('');
+                                    }}
+                                    disabled={isSending}
+                                    className="px-5 py-2 text-xs font-bold text-white bg-gradient-to-r from-[#06B6D4] to-[#0891b2] rounded-xl hover:shadow-lg hover:shadow-[#06B6D4]/20 transition-all active:scale-95 flex items-center gap-1.5 disabled:opacity-50"
+                                >
+                                    {(isSending && suggestionText) ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+                                    ส่งข้อความนี้
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
                     <form onSubmit={handleSendMessage} className="flex items-end gap-3 bg-gray-50 p-2 rounded-[28px] border border-gray-100 focus-within:bg-white focus-within:ring-8 focus-within:ring-cyan-500/5 focus-within:border-cyan-500/20 transition-all duration-300">
                         {/* Hidden file input */}
                         <input
