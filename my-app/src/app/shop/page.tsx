@@ -569,36 +569,30 @@ export default function ShopDashboard() {
                                             </div>
                                             <div className="flex flex-col">
                                                 <span className="text-sm text-[#455a64] font-bold leading-tight mb-1">{order.customer}</span>
-                                                {order.items && order.items.length > 1 ? (
-                                                    <button
-                                                        onClick={() => openDetailsModal(order)}
-                                                        className="flex items-center gap-1.5 opacity-60 hover:opacity-100 hover:scale-[1.02] transition-all group/items"
-                                                        title="คลิกเพื่อดูรายการไฟล์ทั้งหมด"
-                                                    >
-                                                        <div className="w-5 h-5 rounded-lg bg-[#F0F4F8] group-hover/items:bg-[#06B6D4] group-hover/items:text-white flex items-center justify-center text-[#90a4ae] border border-gray-100 transition-colors">
-                                                            <FileText size={10} />
-                                                        </div>
-                                                        <span className="text-[11px] text-[#90a4ae] group-hover/items:text-[#06B6D4] font-medium group-hover/items:font-bold underline-offset-2 hover:underline">{order.items.length} รายการ</span>
-                                                    </button>
-                                                ) : order.fileUrl ? (
-                                                    <button
-                                                        onClick={() => setPreviewFile({ url: order.fileUrl, name: order.fileName })}
-                                                        className="flex items-center gap-1.5 group/file cursor-pointer hover:scale-[1.02] transition-transform origin-left text-left"
-                                                        title="คลิกเพื่อดูไฟล์งาน"
-                                                    >
-                                                        <div className="w-5 h-5 rounded-lg bg-gray-50 flex items-center justify-center text-[#90a4ae] group-hover/file:bg-[#06B6D4] group-hover/file:text-white transition-colors shadow-sm border border-gray-100">
-                                                            <Download size={10} />
-                                                        </div>
-                                                        <span className="text-[11px] text-[#455a64] font-medium group-hover/file:text-[#06B6D4] group-hover/file:font-bold transition-all hover:underline underline-offset-2 truncate max-w-[150px]">{order.fileName}</span>
-                                                    </button>
-                                                ) : (
-                                                    <div className="flex items-center gap-1.5 text-gray-400 opacity-60">
-                                                        <div className="w-5 h-5 rounded-lg bg-gray-50 flex items-center justify-center border border-gray-100">
-                                                            <FileText size={10} />
-                                                        </div>
-                                                        <span className="text-[11px] italic truncate max-w-[150px]">{order.fileName}</span>
-                                                    </div>
-                                                )}
+                                                <div className="flex flex-col gap-1.5 mt-0.5">
+                                                    {order.items?.map((item: any, idx: number) => (
+                                                        item.file_url ? (
+                                                            <button
+                                                                key={idx}
+                                                                onClick={() => setPreviewFile({ url: item.file_url, name: item.file_name })}
+                                                                className="flex items-center gap-1.5 group/file cursor-pointer hover:scale-[1.02] transition-transform origin-left text-left"
+                                                                title={`คลิกเพื่อดูไฟล์: ${item.file_name}`}
+                                                            >
+                                                                <div className="w-4.5 h-4.5 min-w-[18px] min-h-[18px] rounded-md bg-gray-50 flex items-center justify-center text-[#90a4ae] group-hover/file:bg-[#06B6D4] group-hover/file:text-white transition-colors shadow-sm border border-gray-100">
+                                                                    <Download size={9} />
+                                                                </div>
+                                                                <span className="text-[11px] text-[#455a64] font-medium group-hover/file:text-[#06B6D4] transition-all truncate max-w-[150px]">{item.file_name}</span>
+                                                            </button>
+                                                        ) : (
+                                                            <div key={idx} className="flex items-center gap-1.5 text-gray-400 opacity-60">
+                                                                <div className="w-4.5 h-4.5 min-w-[18px] min-h-[18px] rounded-md bg-gray-50 flex items-center justify-center border border-gray-100">
+                                                                    <FileText size={9} />
+                                                                </div>
+                                                                <span className="text-[11px] italic truncate max-w-[150px]">{item.file_name || "ไม่มีไฟล์"}</span>
+                                                            </div>
+                                                        )
+                                                    ))}
+                                                </div>
                                             </div>
                                         </div>
                                     </td>
