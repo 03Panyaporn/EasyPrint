@@ -47,11 +47,11 @@ export function middleware(request: NextRequest) {
     }
 
     // ─────────────────────────────────────────────
-    // 3) ถ้า Login แล้ว แต่เข้าหน้า auth (login/register) → redirect ตาม role
+    // 3) ถ้า Login แล้ว และมี Role ครบ แต่พยายามเข้าหน้าที่เป็นหน้า Auth -> redirect ตาม role
     // ─────────────────────────────────────────────
     const isAuthPage = authPaths.some((path) => pathname.startsWith(path))
 
-    if (isAuthPage && token) {
+    if (isAuthPage && token && role) {
         const destination = role === 'merchant' ? '/shop' : '/customer'
         return NextResponse.redirect(new URL(destination, request.url))
     }
