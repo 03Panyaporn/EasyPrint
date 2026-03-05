@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 
 // ─────────────────────────────────────────────
@@ -45,6 +45,7 @@ function AuthModal({
       localStorage.setItem("refresh_token", data.session.refresh_token)
       localStorage.setItem("user", JSON.stringify(data.user))
       document.cookie = `access_token=${data.session.access_token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`
+      document.cookie = `user_role=${data.user.role || 'customer'}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`
 
       // Redirect ตามบทบาท (Role)
       if (data.user.role === 'merchant') {
@@ -322,6 +323,26 @@ const steps = [
 // ─────────────────────────────────────────────
 export default function Home() {
   const [authModal, setAuthModal] = useState<"login" | "register" | null>(null)
+
+  // ถ้า Login อยู่แล้ว ให้ Redirect ไปหน้า Dashboard ของตัวเองทันที
+  // เพื่อป้องกันความสับสนระหว่างหน้า Landing และหน้าใช้งานจริง
+  useEffect(() => {
+    const userStr = localStorage.getItem('user')
+    const token = document.cookie.split('; ').find(row => row.startsWith('access_token='))
+
+    if (userStr && token) {
+      try {
+        const user = JSON.parse(userStr)
+        if (user.role === 'merchant') {
+          window.location.href = '/shop'
+        } else {
+          window.location.href = '/customer'
+        }
+      } catch (e) {
+        console.error("Auth redirect error", e)
+      }
+    }
+  }, [])
 
   return (
     <div className="min-h-screen bg-white">
