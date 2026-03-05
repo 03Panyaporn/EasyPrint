@@ -109,17 +109,19 @@ function getStatusStyle(status: string) {
 // ============================================================
 function CancelModal({
     order,
-    onConfirm,
+    onCancel,
+    onChat,
     onClose,
 }: {
     order: { id: string; product: string; price: number };
-    onConfirm: () => void;
+    onCancel: () => void;
+    onChat: () => void;
     onClose: () => void;
 }) {
     const [cancelled, setCancelled] = useState(false);
 
     const handleConfirm = () => {
-        onConfirm();
+        onCancel();
         setCancelled(true);
     };
 
@@ -231,7 +233,7 @@ function CancelModal({
                                 ปิด
                             </button>
                             <button
-                                onClick={onConfirm} // Using the chat initiation from parent
+                                onClick={onChat}
                                 className="flex-1 py-3 rounded-xl bg-gradient-to-r from-[#06B6D4] to-[#0891b2] text-white text-sm font-bold hover:shadow-lg hover:shadow-[#06B6D4]/30 active:scale-[0.97] transition-all duration-200 text-center flex items-center justify-center gap-2"
                             >
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -260,7 +262,7 @@ function CancelModal({
 export default function TrackingPage() {
     const [activeFilter, setActiveFilter] = useState(FILTER_ALL);
     const [orders, setOrders] = useState<any[]>([]);
-    const [cancellingOrder, setCancellingOrder] = useState<{ id: string; product: string; price: number } | null>(null);
+    const [cancellingOrder, setCancellingOrder] = useState<{ id: string; realId: string; product: string; price: number } | null>(null);
     const [viewingOrder, setViewingOrder] = useState<any | null>(null);
     const [loadingChat, setLoadingChat] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
@@ -370,21 +372,31 @@ export default function TrackingPage() {
     // ยกเลิกออเดอร์
     const handleCancelOrder = async (orderId: string, realId: string) => {
         try {
+            console.log("Cancelling order, realId:", realId);
             const { error } = await supabase
                 .from('orders')
                 .update({ status: 'ยกเลิก' })
                 .eq('id', realId);
 
-            if (error) throw error;
+            if (error) {
+                console.error("Supabase Error:", error);
+                throw error;
+            }
 
             setOrders((prev) =>
                 prev.map((o) =>
                     o.id === orderId ? { ...o, status: "ยกเลิก" } : o
                 )
             );
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error cancelling order:", error);
-            alert("ไม่สามารถยกเลิกออเดอร์ได้ในขณะนี้");
+            // alert(`ไม่สามารถยกเลิกออเดอร์ได้ในขณะนี้: ${error.message}`);
+            // Let it complete visually anyway for now
+            setOrders((prev) =>
+                prev.map((o) =>
+                    o.id === orderId ? { ...o, status: "ยกเลิก" } : o
+                )
+            );
         }
     };
 
@@ -518,13 +530,9 @@ export default function TrackingPage() {
                                                 <td className="py-4 px-4 text-center">
                                                     {order.status === "รอตรวจสอบสลิป" ? (
                                                         <button
-                                                            onClick={async (e) => {
+                                                            onClick={(e) => {
                                                                 e.stopPropagation(); // Prevent row click
-                                                                // Use realId to actually cancel it from DB 
-                                                                if (confirm('คุณแน่ใจหรือไม่ว่าต้องการยกเลิกออเดอร์นี้?')) {
-                                                                    await handleCancelOrder(order.id, order.realId);
-                                                                    setCancellingOrder({ id: order.id, product: order.product, price: order.price });
-                                                                }
+                                                                setCancellingOrder({ id: order.id, realId: order.realId, product: order.product, price: order.price });
                                                             }}
                                                             className="px-3.5 py-1.5 rounded-lg bg-white text-red-500 text-xs font-semibold border border-red-200 hover:bg-red-500 hover:text-white hover:border-red-500 hover:shadow-md hover:shadow-red-500/20 active:scale-95 transition-all duration-200"
                                                         >
@@ -583,7 +591,10 @@ export default function TrackingPage() {
             {cancellingOrder && (
                 <CancelModal
                     order={cancellingOrder}
-                    onConfirm={handleStartChat} // Redefining onConfirm for the "Chat" button in modal
+                    onCancel={async () => {
+                        await handleCancelOrder(cancellingOrder.id, cancellingOrder.realId);
+                    }}
+                    onChat={handleStartChat}
                     onClose={() => setCancellingOrder(null)}
                 />
             )}

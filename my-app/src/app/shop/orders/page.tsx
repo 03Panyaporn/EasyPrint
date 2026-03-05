@@ -14,86 +14,29 @@ import {
     Trash2,
     X,
 } from "lucide-react"
-
-const initialOrders = [
-    {
-        id: "ORD-7721",
-        date: "14 ก.พ. 2569",
-        customer: "คุณวิภาวี ใจดี",
-        fileName: "เอกสารประกอบการเรียน.pdf",
-        price: "42.5",
-        status: "ตรวจสอบสลิป",
-        statusColor: "bg-[#FFF9C4] text-[#F9A825]",
-        progress: 10,
-        progressBarColor: "bg-[#06B6D4]",
-    },
-    {
-        id: "ORD-7720",
-        date: "14 ก.พ. 2569",
-        customer: "สมชาย รักเรียน",
-        fileName: "รายงานประจำปี_V2.docx",
-        price: "120",
-        status: "กำลังดำเนินการ",
-        statusColor: "bg-[#E0F7FA] text-[#06B6D4]",
-        progress: 30,
-        progressBarColor: "bg-[#06B6D4]",
-    },
-    {
-        id: "ORD-7719",
-        date: "14 ก.พ. 2569",
-        customer: "กิตติศักดิ์ พิมพ์เก่ง",
-        fileName: "Poster_A3_Event.ai",
-        price: "350",
-        status: "กำลังดำเนินการ",
-        statusColor: "bg-[#E0F7FA] text-[#06B6D4]",
-        progress: 50,
-        progressBarColor: "bg-[#06B6D4]",
-    },
-    {
-        id: "ORD-7718",
-        date: "13 ก.พ. 2569",
-        customer: "รุ่งนภา แจ่มใส",
-        fileName: "รูปถ่ายครอบครัว.jpg",
-        price: "85",
-        status: "เสร็จสิ้นพร้อมรับ",
-        statusColor: "bg-[#E8F5E9] text-[#4CAF50]",
-        progress: 80,
-        progressBarColor: "bg-[#06B6D4]",
-    },
-    {
-        id: "ORD-7717",
-        date: "13 ก.พ. 2569",
-        customer: "ดนัย สุขุม",
-        fileName: "แผ่นพับแนะนำร้าน.pdf",
-        price: "240",
-        status: "รับแล้ว",
-        statusColor: "bg-[#F5F5F5] text-[#9E9E9E]",
-        progress: 100,
-        progressBarColor: "bg-[#06B6D4]",
-    },
-    {
-        id: "ORD-7716",
-        date: "12 ก.พ. 2569",
-        customer: "มานะ ขยัน",
-        fileName: "วิทยานิพนธ์_final.pdf",
-        price: "1,250",
-        status: "ตรวจสอบสลิป",
-        statusColor: "bg-[#FFF9C4] text-[#F9A825]",
-        progress: 10,
-        progressBarColor: "bg-[#06B6D4]",
-    },
-]
+import { supabase } from "@/lib/supabase"
 
 const statusSequence = [
-    { label: "ตรวจสอบสลิป", color: "bg-[#FFF9C4] text-[#F9A825]", progress: 10 },
+    { label: "รอตรวจสอบสลิป", color: "bg-[#FFF9C4] text-[#F9A825]", progress: 10 },
     { label: "กำลังดำเนินการ", color: "bg-[#E0F7FA] text-[#06B6D4]", progress: 40 },
-    { label: "เสร็จสิ้นพร้อมรับ", color: "bg-[#E8F5E9] text-[#4CAF50]", progress: 80 },
+    { label: "เสร็จรอรับ", color: "bg-[#E8F5E9] text-[#4CAF50]", progress: 80 },
     { label: "รับแล้ว", color: "bg-[#F5F5F5] text-[#9E9E9E]", progress: 100 },
 ]
 
+const getStatusInfo = (status: string) => {
+    switch (status) {
+        case "รอตรวจสอบสลิป": return { statusColor: "bg-[#FFF9C4] text-[#F9A825]", progress: 10, progressBarColor: "bg-[#06B6D4]" };
+        case "กำลังดำเนินการ": return { statusColor: "bg-[#E0F7FA] text-[#06B6D4]", progress: 40, progressBarColor: "bg-[#06B6D4]" };
+        case "เสร็จรอรับ": return { statusColor: "bg-[#E8F5E9] text-[#4CAF50]", progress: 80, progressBarColor: "bg-[#06B6D4]" };
+        case "รับแล้ว": return { statusColor: "bg-[#F5F5F5] text-[#9E9E9E]", progress: 100, progressBarColor: "bg-[#06B6D4]" };
+        case "ยกเลิก": return { statusColor: "bg-[#FCE4EC] text-[#E91E63]", progress: 0, progressBarColor: "bg-gray-200" };
+        default: return { statusColor: "bg-gray-100 text-gray-500", progress: 0, progressBarColor: "bg-gray-200" };
+    }
+}
+
 export default function OrdersPage() {
     const [userName, setUserName] = useState("ร้านค้า")
-    const [orders, setOrders] = useState(initialOrders)
+    const [orders, setOrders] = useState<any[]>([])
     const [filterStatus, setFilterStatus] = useState("ทั้งหมด")
 
     const filteredOrders = filterStatus === "ทั้งหมด"
@@ -116,7 +59,67 @@ export default function OrdersPage() {
                 setUserName(parsed.name || parsed.email || "ร้านค้า")
             }
         } catch { }
+
+        // Fetch Initial
+        fetchOrders();
+
+        // Realtime Subscription
+        const channel = supabase.channel('shop-orders-realtime')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
+                fetchOrders(); // Refresh
+            })
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
     }, [])
+
+    const fetchOrders = async () => {
+        try {
+            const { data, error } = await supabase
+                .from('orders')
+                .select(`
+                    id, 
+                    created_at, 
+                    total_price, 
+                    status, 
+                    payment_slip_url,
+                    order_items (*)
+                `)
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+            if (data) {
+                const formattedOrders = data.map(order => {
+                    const items = order.order_items || [];
+                    const firstItemName = items.length > 0 ? items[0].file_name : "ไม่มีไฟล์";
+                    const fileNameStr = items.length > 1 ? `${firstItemName} (และอีก ${items.length - 1} ไฟล์)` : firstItemName;
+
+                    const dateStr = new Date(order.created_at).toISOString().split('T')[0].replace(/-/g, '');
+                    const shortOrderCode = `ORD-${dateStr}-${order.id.split('-')[0].substring(0, 4).toUpperCase()}`;
+
+                    const statusInfo = getStatusInfo(order.status);
+
+                    return {
+                        realId: order.id,
+                        id: shortOrderCode,
+                        date: new Date(order.created_at).toLocaleDateString("th-TH", { year: "numeric", month: "short", day: "numeric" }),
+                        customer: "ลูกค้าทั่วไป", // We don't have user table joined yet
+                        fileName: fileNameStr,
+                        price: order.total_price.toFixed(2),
+                        status: order.status,
+                        payment_slip_url: order.payment_slip_url,
+                        items: items, // keep all items for details
+                        ...statusInfo
+                    }
+                });
+                setOrders(formattedOrders);
+            }
+        } catch (error) {
+            console.error(error);
+        }
+    }
 
     // Handler functions
     const openUpdateModal = (order: any) => {
@@ -153,46 +156,40 @@ export default function OrdersPage() {
         setIsCancelConfirmOpen(true)
     }
 
-    const confirmCancelOrder = () => {
+    const confirmCancelOrder = async () => {
         if (!selectedOrder) return
 
-        const updatedOrders = orders.map(o =>
-            o.id === selectedOrder.id
-                ? { ...o, status: "ยกเลิก", statusColor: "bg-[#FCE4EC] text-[#E91E63]", progress: 0, progressBarColor: "bg-gray-200" }
-                : o
-        )
-        setOrders(updatedOrders)
-        closeAllModals()
-    }
-
-    const handleUpdateStatus = () => {
-        if (!selectedOrder) return
-        if (selectedOrder.status === "ตรวจสอบสลิป") return // Strict guard
-        const currentIndex = statusSequence.findIndex(s => s.label === selectedOrder.status)
-        if (currentIndex < statusSequence.length - 1) {
-            const nextStatus = statusSequence[currentIndex + 1]
-            const updatedOrders = orders.map(o =>
-                o.id === selectedOrder.id
-                    ? { ...o, status: nextStatus.label, statusColor: nextStatus.color, progress: nextStatus.progress }
-                    : o
-            )
-            setOrders(updatedOrders)
-            setSelectedOrder({ ...selectedOrder, status: nextStatus.label, statusColor: nextStatus.color, progress: nextStatus.progress })
+        try {
+            await supabase.from('orders').update({ status: 'ยกเลิก' }).eq('id', selectedOrder.realId)
+            fetchOrders(); // refresh data automatically via realtime or this manual call
+        } catch (e) {
+            console.error(e)
         }
         closeAllModals()
     }
 
-    const handleVerifySlip = () => {
+    const handleUpdateStatus = async () => {
+        if (!selectedOrder) return
+        if (selectedOrder.status === "รอตรวจสอบสลิป") return // Strict guard
+        const currentIndex = statusSequence.findIndex(s => s.label === selectedOrder.status)
+        if (currentIndex !== -1 && currentIndex < statusSequence.length - 1) {
+            const nextStatus = statusSequence[currentIndex + 1]
+            try {
+                await supabase.from('orders').update({ status: nextStatus.label }).eq('id', selectedOrder.realId)
+                fetchOrders();
+            } catch (e) { console.error(e) }
+        }
+        closeAllModals()
+    }
+
+    const handleVerifySlip = async () => {
         if (!selectedOrder) return
 
         const nextStatus = statusSequence[1] // "กำลังดำเนินการ"
-        const updatedOrders = orders.map(o =>
-            o.id === selectedOrder.id
-                ? { ...o, status: nextStatus.label, statusColor: nextStatus.color, progress: nextStatus.progress, progressBarColor: "bg-[#06B6D4]" }
-                : o
-        )
-        setOrders(updatedOrders)
-        setSelectedOrder({ ...selectedOrder, status: nextStatus.label, statusColor: nextStatus.color, progress: nextStatus.progress, progressBarColor: "bg-[#06B6D4]" })
+        try {
+            await supabase.from('orders').update({ status: nextStatus.label }).eq('id', selectedOrder.realId)
+            fetchOrders();
+        } catch (e) { console.error(e) }
         closeAllModals()
     }
 
@@ -207,8 +204,8 @@ export default function OrdersPage() {
             countBg: "bg-[#E0E7FF]",
         },
         {
-            label: "ตรวจสอบสลิป",
-            value: orders.filter(o => o.status === "ตรวจสอบสลิป").length.toString(),
+            label: "รอตรวจสอบสลิป",
+            value: orders.filter(o => o.status === "รอตรวจสอบสลิป").length.toString(),
             unit: "ออเดอร์",
             color: "bg-[#FFF9C4]",
             textColor: "text-[#F9A825]",
@@ -223,8 +220,8 @@ export default function OrdersPage() {
             countBg: "bg-[#B2EBF2]",
         },
         {
-            label: "เสร็จสิ้นพร้อมรับ",
-            value: orders.filter(o => o.status === "เสร็จสิ้นพร้อมรับ").length.toString(),
+            label: "เสร็จรอรับ",
+            value: orders.filter(o => o.status === "เสร็จรอรับ").length.toString(),
             unit: "ออเดอร์",
             color: "bg-[#E8F5E9]",
             textColor: "text-[#4CAF50]",
@@ -503,17 +500,20 @@ export default function OrdersPage() {
                                     </div>
 
                                     {/* Moving Slip Preview here, below Step 1 text */}
-                                    {selectedOrder.status === "ตรวจสอบสลิป" && (
+                                    {selectedOrder.status === "รอตรวจสอบสลิป" && (
                                         <div
                                             onClick={() => openSlipModal(selectedOrder)}
                                             className="ml-11 bg-[#FFF9C4] shadow-sm rounded-2xl p-4 border border-gray-100 flex items-center gap-4 group cursor-pointer hover:bg-gray-100 transition-all"
                                         >
                                             <div className="w-16 h-16 bg-white rounded-xl border border-gray-200 flex items-center justify-center text-gray-300 group-hover:scale-105 transition-transform overflow-hidden flex-shrink-0">
-                                                <Receipt size={24} />
+                                                {selectedOrder.payment_slip_url ? (
+                                                    // eslint-disable-next-line @next/next/no-img-element
+                                                    <img src={selectedOrder.payment_slip_url} alt="slip" className="w-full h-full object-cover" />
+                                                ) : <Receipt size={24} />}
                                             </div>
                                             <div className="flex flex-col">
                                                 <p className="text-[11px] font-bold text-[#90a4ae] uppercase tracking-wider mb-0.5">หลักฐานการโอนเงิน</p>
-                                                <p className="text-xs text-[#455a64] font-medium">รอการตรวจสอบสลิป...</p>
+                                                <p className="text-xs text-[#455a64] font-medium">รอการตรวจสอบสลิป... (คลิกดูภาพใหญ่)</p>
                                             </div>
                                         </div>
                                     )}
@@ -544,25 +544,25 @@ export default function OrdersPage() {
                         <div className="p-6 flex items-center gap-3">
                             <button
                                 onClick={handleCancelOrder}
-                                disabled={selectedOrder.status !== "ตรวจสอบสลิป"} // Can only cancel if checking slip
-                                className={`flex-1 px-6 py-3 border rounded-2xl text-sm font-bold transition-all ${selectedOrder.status !== "ตรวจสอบสลิป"
+                                disabled={selectedOrder.status !== "รอตรวจสอบสลิป"} // Can only cancel if checking slip
+                                className={`flex-1 px-6 py-3 border rounded-2xl text-sm font-bold transition-all ${selectedOrder.status !== "รอตรวจสอบสลิป"
                                     ? "border-gray-100 text-gray-300 cursor-not-allowed bg-gray-50"
                                     : "border-[#e5e7eb] text-rose-500 hover:bg-rose-50"}`}
                             >
-                                {selectedOrder.status === "ตรวจสอบสลิป" ? "สลิปไม่ถูกต้อง" :
+                                {selectedOrder.status === "รอตรวจสอบสลิป" ? "สลิปไม่ถูกต้อง" :
                                     selectedOrder.status === "ยกเลิก" ? "ถูกยกเลิกแล้ว" : "ยืนยันแล้วยกเลิกไม่ได้"}
                             </button>
                             <button
-                                onClick={selectedOrder.status === "ตรวจสอบสลิป" ? handleVerifySlip : handleUpdateStatus}
+                                onClick={selectedOrder.status === "รอตรวจสอบสลิป" ? handleVerifySlip : handleUpdateStatus}
                                 disabled={selectedOrder.status === "ยกเลิก"}
-                                className={`flex-1 px-6 py-3 rounded-2xl text-sm font-bold transition-all shadow-lg ${selectedOrder.status === "ตรวจสอบสลิป"
+                                className={`flex-1 px-6 py-3 rounded-2xl text-sm font-bold transition-all shadow-lg ${selectedOrder.status === "รอตรวจสอบสลิป"
                                     ? "bg-amber-500 text-white hover:bg-amber-600 shadow-amber-500/20"
                                     : selectedOrder.status === "ยกเลิก"
                                         ? "bg-gray-100 text-gray-400 cursor-not-allowed shadow-none"
                                         : "bg-[#06B6D4] text-white hover:bg-[#0891b2] shadow-[#06B6D4]/20"
                                     }`}
                             >
-                                {selectedOrder.status === "ตรวจสอบสลิป" ? "ตรวจสอบเรียบร้อย" :
+                                {selectedOrder.status === "รอตรวจสอบสลิป" ? "ตรวจสอบเรียบร้อย" :
                                     selectedOrder.status === "ยกเลิก" ? "ถูกยกเลิกแล้ว" : "ยืนยันการอัปเดต"}
                             </button>
                         </div>
@@ -653,16 +653,25 @@ export default function OrdersPage() {
                                 หลักฐานการโอนเงิน
                             </h3>
                             <div className="aspect-[3/4] rounded-2xl bg-gray-100 border border-gray-200 flex flex-col items-center justify-center gap-3 overflow-hidden group">
-                                <div className="w-16 h-16 bg-white rounded-full shadow-sm flex items-center justify-center text-gray-300 group-hover:scale-110 transition-transform">
-                                    <Receipt size={32} />
-                                </div>
-                                <p className="text-sm font-medium text-gray-400 italic">รูปภาพสลิปโอนเงิน</p>
+                                {selectedOrder.payment_slip_url ? (
+                                    <div className="relative w-full h-full">
+                                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                                        <img src={selectedOrder.payment_slip_url} alt="Slip" className="w-full h-full object-contain bg-black/5" />
+                                    </div>
+                                ) : (
+                                    <>
+                                        <div className="w-16 h-16 bg-white rounded-full shadow-sm flex items-center justify-center text-gray-300 group-hover:scale-110 transition-transform">
+                                            <Receipt size={32} />
+                                        </div>
+                                        <p className="text-sm font-medium text-gray-400 italic">ไม่พบรูปภาพสลิป</p>
+                                    </>
+                                )}
                             </div>
                             <div className="mt-6 flex gap-3">
                                 <button
                                     onClick={handleCancelOrder}
-                                    disabled={selectedOrder.status !== "ตรวจสอบสลิป"}
-                                    className={`flex-1 py-3.5 border rounded-2xl text-sm font-bold transition-all ${selectedOrder.status !== "ตรวจสอบสลิป"
+                                    disabled={selectedOrder.status !== "รอตรวจสอบสลิป"}
+                                    className={`flex-1 py-3.5 border rounded-2xl text-sm font-bold transition-all ${selectedOrder.status !== "รอตรวจสอบสลิป"
                                         ? "bg-gray-50 border-gray-100 text-gray-300 cursor-not-allowed"
                                         : "border-[#e5e7eb] text-rose-500 hover:bg-rose-50"
                                         }`}
@@ -671,13 +680,13 @@ export default function OrdersPage() {
                                 </button>
                                 <button
                                     onClick={handleVerifySlip}
-                                    disabled={selectedOrder.status !== "ตรวจสอบสลิป"}
-                                    className={`flex-[2] py-3.5 rounded-2xl text-sm font-bold transition-all shadow-lg ${selectedOrder.status !== "ตรวจสอบสลิป"
+                                    disabled={selectedOrder.status !== "รอตรวจสอบสลิป"}
+                                    className={`flex-[2] py-3.5 rounded-2xl text-sm font-bold transition-all shadow-lg ${selectedOrder.status !== "รอตรวจสอบสลิป"
                                         ? "bg-gray-100 text-gray-400 cursor-not-allowed shadow-none"
                                         : "bg-amber-500 text-white hover:bg-amber-600 shadow-amber-500/20"
                                         }`}
                                 >
-                                    {selectedOrder.status === "ตรวจสอบสลิป" ? "ตรวจสอบเรียบร้อย" : "ตรวจสอบแล้ว"}
+                                    {selectedOrder.status === "รอตรวจสอบสลิป" ? "ตรวจสอบเรียบร้อย" : "ตรวจสอบแล้ว"}
                                 </button>
                             </div>
                         </div>
@@ -721,14 +730,14 @@ export default function OrdersPage() {
                             <div className="mt-8 flex gap-3">
                                 <button
                                     onClick={() => { window.print(); closeAllModals(); }}
-                                    disabled={selectedOrder.status === "ตรวจสอบสลิป"}
-                                    className={`flex-1 py-3.5 rounded-2xl text-sm font-bold transition-all flex items-center justify-center gap-2 shadow-lg ${selectedOrder.status === "ตรวจสอบสลิป"
+                                    disabled={selectedOrder.status === "รอตรวจสอบสลิป"}
+                                    className={`flex-1 py-3.5 rounded-2xl text-sm font-bold transition-all flex items-center justify-center gap-2 shadow-lg ${selectedOrder.status === "รอตรวจสอบสลิป"
                                         ? "bg-gray-100 text-gray-400 cursor-not-allowed shadow-none"
                                         : "bg-[#455a64] text-white hover:bg-[#37474f] shadow-gray-200"
                                         }`}
                                 >
                                     <Printer size={18} />
-                                    {selectedOrder.status === "ตรวจสอบสลิป" ? "ต้องตรวจสอบสลิปก่อนเริ่มพิมพ์" : "ยืนยันส่งพิมพ์"}
+                                    {selectedOrder.status === "รอตรวจสอบสลิป" ? "ต้องตรวจสอบสลิปก่อนเริ่มพิมพ์" : "ยืนยันส่งพิมพ์"}
                                 </button>
                             </div>
                         </div>
