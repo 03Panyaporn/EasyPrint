@@ -30,6 +30,7 @@ export default function Navbar() {
         localStorage.removeItem('user')
 
         document.cookie = 'access_token=; path=/; max-age=0'
+        document.cookie = 'user_role=; path=/; max-age=0'
 
         window.location.href = '/'
     }

@@ -13,9 +13,10 @@ app.use('*', logger())
 app.use(
     '*',
     cors({
-        origin: process.env.FRONTEND_URL ?? 'http://localhost:3000',
+        origin: (origin) => origin, // อนุญาตทุก origin ในช่วงพัฒนา (ช่วยเรื่อง port เปลี่ยน เช่น 3000 -> 3003)
         allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-        allowHeaders: ['Content-Type', 'Authorization'],
+        allowHeaders: ['Content-Type', 'Authorization', 'Cookie'],
+        credentials: true,
     })
 )
 
