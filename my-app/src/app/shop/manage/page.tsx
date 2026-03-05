@@ -68,7 +68,41 @@ export default function ManageShopPage() {
         }
 
         fetchShop()
+
+        const channel = supabase.channel('shop-status-manage')
+            .on('postgres_changes', {
+                event: 'UPDATE',
+                schema: 'public',
+                table: 'shops',
+                filter: `id=eq.b9652bb2-cba5-4440-9d89-0f93f598cb67`
+            }, (payload) => {
+                if (payload.new && typeof payload.new.is_open === 'boolean') {
+                    setShopStatus(payload.new.is_open)
+                }
+            })
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel)
+        }
     }, [])
+
+    const handleToggleShopStatus = async () => {
+        const newStatus = !shopStatus
+        setShopStatus(newStatus)
+
+        try {
+            const { error } = await supabase
+                .from('shops')
+                .update({ is_open: newStatus })
+                .eq('id', "b9652bb2-cba5-4440-9d89-0f93f598cb67")
+            if (error) throw error
+        } catch (error) {
+            console.error("Error toggling shop status:", error)
+            setShopStatus(!newStatus)
+            alert("ไม่สามารถอัปเดตสถานะร้านค้าได้แบบเรียลไทม์")
+        }
+    }
 
     const handleSave = async () => {
         if (!shopId) {
@@ -151,7 +185,7 @@ export default function ManageShopPage() {
                                 {shopStatus ? 'เปิดร้านค้า' : 'ปิดร้านค้า'}
                             </span>
                         </div>
-                        <Toggle active={shopStatus} onChange={() => setShopStatus(!shopStatus)} />
+                        <Toggle active={shopStatus} onChange={handleToggleShopStatus} />
                     </div>
 
                     <div className="flex items-center gap-4 px-2 border-l border-[#e5e7eb] pl-6">
