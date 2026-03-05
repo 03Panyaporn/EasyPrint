@@ -163,9 +163,10 @@ export default function OrderPage() {
 
     const extraPrice = selectedService ? findPrice(selectedService.options?.special, extraOption) : 0;
 
-    // Some units calculate by page, others just by piece
-    const baseAmount = selectedService?.unit === 'ต่อหน้า' && pageCount > 0 ? pageCount * quantity : quantity;
-    const totalPriceNum = selectedFile ? (unitPrice * baseAmount) + (extraPrice * quantity) : 0;
+    // ราคาสินค้า = (ราคาต่อหน้า * จำนวนหน้า) + ค่าตัวเลือกพิเศษเพิ่ม (เช่น เข้าเล่มต่อชุด)
+    // ทั้งหมดคูณด้วยจำนวนชุดที่สั่ง (quantity)
+    const effectivePages = pageCount > 0 ? pageCount : 1;
+    const totalPriceNum = selectedFile ? ((unitPrice * effectivePages) + extraPrice) * quantity : 0;
     const totalPrice = isNaN(totalPriceNum) ? "0.00" : totalPriceNum.toFixed(2);
 
     // Options for dropdowns

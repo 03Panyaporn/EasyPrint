@@ -1,46 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
-
-// ข้อมูล Mock สำหรับแสดงผล
-const initialOrders = [
-    {
-        id: "ORD-20260301-001",
-        product: "เอกสาร A4 ขาวดำ",
-        quantity: 5,
-        price: 75.0,
-        status: "กำลังดำเนินการ",
-    },
-    {
-        id: "ORD-20260228-012",
-        product: "โปสเตอร์ A3 สี",
-        quantity: 2,
-        price: 120.0,
-        status: "รอตรวจสอบสลิป",
-    },
-    {
-        id: "ORD-20260228-008",
-        product: "เข้าเล่มสันกาว A4",
-        quantity: 3,
-        price: 210.0,
-        status: "เสร็จรอรับ",
-    },
-    {
-        id: "ORD-20260227-005",
-        product: "นามบัตร สี",
-        quantity: 1,
-        price: 150.0,
-        status: "รับแล้ว",
-    },
-    {
-        id: "ORD-20260227-003",
-        product: "เอกสาร A4 สี หน้าหลัง",
-        quantity: 10,
-        price: 300.0,
-        status: "รอตรวจสอบสลิป",
-    },
-];
+import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase";
 
 const FILTER_ALL = "ทั้งหมด";
 
@@ -298,9 +259,73 @@ function CancelModal({
 // ============================================================
 export default function TrackingPage() {
     const [activeFilter, setActiveFilter] = useState(FILTER_ALL);
-    const [orders, setOrders] = useState(initialOrders);
+    const [orders, setOrders] = useState<any[]>([]);
     const [cancellingOrder, setCancellingOrder] = useState<{ id: string; product: string; price: number } | null>(null);
+    const [viewingOrder, setViewingOrder] = useState<any | null>(null);
     const [loadingChat, setLoadingChat] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        fetchOrders();
+    }, []);
+
+    const fetchOrders = async () => {
+        setIsLoading(true);
+        try {
+            const userJson = localStorage.getItem('user');
+            const user = userJson ? JSON.parse(userJson) : null;
+            if (!user?.id) return;
+
+            // Fetch orders along with their first item to display as the "product name"
+            const { data, error } = await supabase
+                .from('orders')
+                .select(`
+                    id, 
+                    total_price, 
+                    status,
+                    created_at,
+                    order_items ( id, file_name, quantity, total_price, status, document_type, document_detail, document_size, extra_option, page_count, unit_price )
+                `)
+                .eq('customer_id', user.id)
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+
+            if (data) {
+                // Formatting data for display
+                const formattedOrders = data.map(order => {
+                    const items = order.order_items || [];
+                    let productDesc = items.length > 0 ? items[0].file_name : "บริการสั่งพิมพ์";
+                    if (items.length > 1) {
+                        productDesc += ` (และอีก ${items.length - 1} รายการ)`;
+                    }
+
+                    const totalQuantity = items.reduce((sum: number, i: any) => sum + (i.quantity || 1), 0);
+
+                    // Create short ID like ORD-20260305-XXXX
+                    const dateStr = new Date(order.created_at).toISOString().split('T')[0].replace(/-/g, '');
+                    const shortId = `ORD-${dateStr}-${order.id.split('-')[0].substring(0, 4).toUpperCase()}`;
+
+                    return {
+                        id: shortId,
+                        realId: order.id,
+                        product: productDesc,
+                        quantity: totalQuantity,
+                        price: order.total_price,
+                        status: order.status,
+                        items: items, // keep all items for the details modal
+                        createdAt: order.created_at
+                    };
+                });
+
+                setOrders(formattedOrders);
+            }
+        } catch (error) {
+            console.error("Error fetching orders:", error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     const handleStartChat = async () => {
         setLoadingChat(true)
@@ -343,12 +368,24 @@ export default function TrackingPage() {
             : orders.filter((order) => order.status === activeFilter);
 
     // ยกเลิกออเดอร์
-    const handleCancelOrder = (orderId: string) => {
-        setOrders((prev) =>
-            prev.map((o) =>
-                o.id === orderId ? { ...o, status: "ยกเลิก" } : o
-            )
-        );
+    const handleCancelOrder = async (orderId: string, realId: string) => {
+        try {
+            const { error } = await supabase
+                .from('orders')
+                .update({ status: 'ยกเลิก' })
+                .eq('id', realId);
+
+            if (error) throw error;
+
+            setOrders((prev) =>
+                prev.map((o) =>
+                    o.id === orderId ? { ...o, status: "ยกเลิก" } : o
+                )
+            );
+        } catch (error) {
+            console.error("Error cancelling order:", error);
+            alert("ไม่สามารถยกเลิกออเดอร์ได้ในขณะนี้");
+        }
     };
 
     return (
@@ -438,11 +475,21 @@ export default function TrackingPage() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {filteredOrders.length > 0 ? (
+                                    {isLoading ? (
+                                        <tr>
+                                            <td colSpan={6} className="py-16 text-center">
+                                                <div className="flex justify-center items-center">
+                                                    <div className="w-8 h-8 border-4 border-[#06B6D4]/30 border-t-[#06B6D4] rounded-full animate-spin"></div>
+                                                </div>
+                                                <p className="mt-4 text-sm text-gray-500 font-medium">กำลังโหลดข้อมูลออเดอร์...</p>
+                                            </td>
+                                        </tr>
+                                    ) : filteredOrders.length > 0 ? (
                                         filteredOrders.map((order, idx) => (
                                             <tr
                                                 key={order.id}
-                                                className={`border-t border-gray-50 hover:bg-[#F0FAFB] transition-all duration-200 group ${idx % 2 === 0 ? "bg-white" : "bg-gray-50/50"
+                                                onClick={() => setViewingOrder(order)}
+                                                className={`border-t border-gray-50 focus:bg-[#E0F2FE] hover:bg-[#F0FAFB] transition-all duration-200 cursor-pointer ${idx % 2 === 0 ? "bg-white" : "bg-gray-50/50"
                                                     }`}
                                             >
                                                 <td className="py-4 px-4 text-center">
@@ -456,7 +503,7 @@ export default function TrackingPage() {
                                                         {order.quantity}
                                                     </span>
                                                 </td>
-                                                <td className="py-4 px-4 text-center text-gray-700 font-semibold">{order.price.toFixed(2)} <span className="text-gray-400 font-normal">฿</span></td>
+                                                <td className="py-4 px-4 text-center text-gray-700 font-semibold">{order.price?.toFixed(2) || "0.00"} <span className="text-gray-400 font-normal">฿</span></td>
                                                 <td className="py-4 px-4 text-center">
                                                     <span className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-[11px] font-semibold ${getStatusStyle(order.status)}`}>
                                                         <span className={`w-1.5 h-1.5 rounded-full ${order.status === "รอตรวจสอบสลิป" ? "bg-amber-500" :
@@ -471,14 +518,21 @@ export default function TrackingPage() {
                                                 <td className="py-4 px-4 text-center">
                                                     {order.status === "รอตรวจสอบสลิป" ? (
                                                         <button
-                                                            onClick={() => setCancellingOrder({ id: order.id, product: order.product, price: order.price })}
+                                                            onClick={async (e) => {
+                                                                e.stopPropagation(); // Prevent row click
+                                                                // Use realId to actually cancel it from DB 
+                                                                if (confirm('คุณแน่ใจหรือไม่ว่าต้องการยกเลิกออเดอร์นี้?')) {
+                                                                    await handleCancelOrder(order.id, order.realId);
+                                                                    setCancellingOrder({ id: order.id, product: order.product, price: order.price });
+                                                                }
+                                                            }}
                                                             className="px-3.5 py-1.5 rounded-lg bg-white text-red-500 text-xs font-semibold border border-red-200 hover:bg-red-500 hover:text-white hover:border-red-500 hover:shadow-md hover:shadow-red-500/20 active:scale-95 transition-all duration-200"
                                                         >
                                                             ยกเลิก
                                                         </button>
                                                     ) : order.status === "ยกเลิก" ? (
                                                         <button
-                                                            onClick={handleStartChat}
+                                                            onClick={(e) => { e.stopPropagation(); handleStartChat(); }}
                                                             disabled={loadingChat}
                                                             className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-[#06B6D4] to-[#0891b2] text-white text-xs font-semibold hover:shadow-md hover:shadow-[#06B6D4]/30 active:scale-95 transition-all duration-200 disabled:opacity-50"
                                                         >
@@ -532,6 +586,106 @@ export default function TrackingPage() {
                     onConfirm={handleStartChat} // Redefining onConfirm for the "Chat" button in modal
                     onClose={() => setCancellingOrder(null)}
                 />
+            )}
+
+            {/* ===== Order Details Modal ===== */}
+            {viewingOrder && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-gray-900/40 backdrop-blur-sm" onClick={() => setViewingOrder(null)} />
+                    <div className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden relative z-10 animate-in fade-in zoom-in-95 duration-200">
+                        {/* Header */}
+                        <div className="bg-gradient-to-r from-teal-500 to-emerald-500 px-6 py-4 flex items-center justify-between">
+                            <div className="flex items-center gap-3 text-white">
+                                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-md">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                        <polyline points="14 2 14 8 20 8" />
+                                        <line x1="16" y1="13" x2="8" y2="13" />
+                                        <line x1="16" y1="17" x2="8" y2="17" />
+                                        <line x1="10" y1="9" x2="8" y2="9" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-lg leading-tight tracking-wide">รายละเอียดคำสั่งซื้อ</h3>
+                                    <p className="text-teal-100 text-xs font-mono">{viewingOrder.id}</p>
+                                </div>
+                            </div>
+                            <button onClick={() => setViewingOrder(null)} className="text-white hover:bg-white/20 p-2 rounded-full transition-colors">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                    <line x1="18" y1="6" x2="6" y2="18" />
+                                    <line x1="6" y1="6" x2="18" y2="18" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        {/* Order Items List */}
+                        <div className="max-h-[60vh] overflow-y-auto p-6 bg-gray-50/50">
+                            <div className="space-y-4">
+                                {viewingOrder.items?.map((item: any, i: number) => (
+                                    <div key={i} className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col sm:flex-row gap-4">
+
+                                        {/* Status or index indicator */}
+                                        <div className="hidden sm:flex shrink-0 w-12 h-12 bg-gray-50 rounded-xl items-center justify-center text-gray-400 font-bold border border-gray-100">
+                                            #{i + 1}
+                                        </div>
+
+                                        <div className="flex-1 space-y-2">
+                                            {/* Top info: Filename & Status */}
+                                            <div className="flex justify-between items-start">
+                                                <h4 className="font-semibold text-gray-800 break-all pr-4 flex-1">
+                                                    {item.file_name}
+                                                </h4>
+                                                <div className="text-right shrink-0">
+                                                    <p className="text-[#06B6D4] font-bold">{(item.total_price || 0).toFixed(2)} ฿</p>
+                                                </div>
+                                            </div>
+
+                                            {/* Properties Grid */}
+                                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-y-2 gap-x-4 text-xs">
+                                                <div>
+                                                    <span className="text-gray-400 block mb-0.5 text-[10px]">ประเภทเอกสาร</span>
+                                                    <span className="font-medium text-gray-700 bg-gray-100 px-2 py-0.5 rounded-md inline-block">{item.document_type || "-"}</span>
+                                                </div>
+                                                <div>
+                                                    <span className="text-gray-400 block mb-0.5 text-[10px]">สี/ขาวดำ</span>
+                                                    <span className="font-medium text-gray-700 bg-gray-100 px-2 py-0.5 rounded-md inline-block">{item.document_detail || "-"}</span>
+                                                </div>
+                                                <div>
+                                                    <span className="text-gray-400 block mb-0.5 text-[10px]">ขนาด</span>
+                                                    <span className="font-medium text-gray-700 bg-gray-100 px-2 py-0.5 rounded-md inline-block">{item.document_size || "-"}</span>
+                                                </div>
+                                                <div>
+                                                    <span className="text-gray-400 block mb-0.5 text-[10px]">เข้าเล่ม</span>
+                                                    <span className="font-medium text-gray-700 bg-gray-100 px-2 py-0.5 rounded-md inline-block">{item.extra_option && item.extra_option !== "none" ? item.extra_option : "ไม่มี"}</span>
+                                                </div>
+                                            </div>
+
+                                            {/* Quantity and Pages */}
+                                            <div className="pt-2 border-t border-gray-50 flex items-center justify-between text-xs text-gray-500">
+                                                <div className="flex gap-4">
+                                                    <span>จำนวนหน้า: <strong className="text-gray-700">{item.page_count}</strong></span>
+                                                    <span>จำนวนชุด: <strong className="text-gray-700">{item.quantity}</strong></span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Footer Totals */}
+                        <div className="bg-white p-5 border-t border-gray-100 flex items-center justify-between">
+                            <div className="text-xs text-gray-500">
+                                วางเสร็จเมื่อ: {new Date(viewingOrder.createdAt).toLocaleString('th-TH')}
+                            </div>
+                            <div className="text-right flex items-center gap-3">
+                                <span className="text-gray-400 text-sm font-medium">ยอดรวมทั้งหมด</span>
+                                <span className="text-xl font-bold text-[#06B6D4]">{viewingOrder.price?.toFixed(2) || "0.00"} ฿</span>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
             )}
         </div>
     );

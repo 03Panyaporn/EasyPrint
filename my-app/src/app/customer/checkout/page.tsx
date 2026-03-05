@@ -4,6 +4,7 @@ import { useCart } from "@/context/CartContext";
 import type { CartItem } from "@/context/CartContext";
 import { useRouter } from "next/navigation";
 import { useState, useRef } from "react";
+import { supabase } from "@/lib/supabase";
 
 // ─── File Preview Modal ───────────────────────────────────────────────────────
 function FilePreviewModal({ item, onClose }: { item: CartItem; onClose: () => void }) {
@@ -126,8 +127,10 @@ export default function CheckoutPage() {
     const [previewItem, setPreviewItem] = useState<CartItem | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
     const grandTotal = selectedItems.reduce((sum, i) => sum + i.totalPrice, 0);
-    const isReady = proofFile !== null && wantReceipt !== null && agreedTerms;
+    const isReady = proofFile !== null && wantReceipt !== null && agreedTerms && !isSubmitting;
 
     const handleProofChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -136,11 +139,86 @@ export default function CheckoutPage() {
         setProofPreview(URL.createObjectURL(file));
     };
 
-    const handleConfirm = () => {
-        if (!isReady) return;
-        clearSelection();
-        clearCart();
-        router.push("/customer/tracking");
+    const handleConfirm = async () => {
+        if (!isReady || !proofFile) return;
+        setIsSubmitting(true);
+
+        try {
+            // Get user
+            const userJson = localStorage.getItem('user');
+            const user = userJson ? JSON.parse(userJson) : null;
+
+            if (!user?.id) {
+                alert("กรุณาเข้าสู่ระบบก่อนชำระเงิน");
+                setIsSubmitting(false);
+                return;
+            }
+
+            // 1. Upload payment slip picture to storage bucket 'slips'
+            const fileExt = proofFile.name.split('.').pop();
+            const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+            const filePath = `receipts/${fileName}`;
+
+            const { data: uploadData, error: uploadError } = await supabase.storage
+                .from('slips')
+                .upload(filePath, proofFile);
+
+            if (uploadError) throw uploadError;
+
+            // Get public URL of the uploaded image
+            const { data: { publicUrl } } = supabase.storage
+                .from('slips')
+                .getPublicUrl(filePath);
+
+            // 2. Insert into orders table
+            const { data: orderData, error: orderError } = await supabase
+                .from('orders')
+                .insert([{
+                    customer_id: user.id,
+                    merchant_id: 'b9652bb2-cba5-4440-9d89-0f93f598cb67', // Hardcoded merchant for now
+                    total_price: grandTotal,
+                    payment_slip_url: publicUrl,
+                    want_receipt: wantReceipt === 'yes',
+                    status: 'รอตรวจสอบสลิป'
+                }])
+                .select()
+                .single();
+
+            if (orderError) throw orderError;
+
+            // 3. Insert all items into order_items table
+            const orderItemsInsertData = selectedItems.map(item => ({
+                order_id: orderData.id,
+                // service_id: item.serviceId, // Will be added later if needed
+                file_name: item.fileName,
+                file_url: item.fileUrl,
+                document_type: item.documentType,
+                document_detail: item.documentDetail,
+                document_size: item.documentSize,
+                extra_option: item.extraOption,
+                page_count: item.pageCount,
+                quantity: item.quantity,
+                unit_price: item.totalPrice / item.quantity,
+                total_price: item.totalPrice
+            }));
+
+            const { error: itemsError } = await supabase
+                .from('order_items')
+                .insert(orderItemsInsertData);
+
+            if (itemsError) throw itemsError;
+
+            // If everything is successful, clear cart and redirect
+            clearSelection();
+            clearCart();
+            router.push("/customer/tracking");
+
+        } catch (error: any) {
+            console.error("Order submission error:", error);
+            alert("เกิดข้อผิดพลาดในการสั่งซื้อ: " + error.message);
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     if (selectedItems.length === 0) {
@@ -432,10 +510,19 @@ export default function CheckoutPage() {
                                         ? "bg-gradient-to-r from-[#06B6D4] to-[#0891b2] text-white shadow-md hover:shadow-[#06B6D4]/40 hover:shadow-xl active:scale-[0.98] cursor-pointer"
                                         : "bg-gray-200 text-gray-400 cursor-not-allowed"}`}
                             >
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" />
-                                </svg>
-                                ยืนยันการชำระเงิน
+                                {isSubmitting ? (
+                                    <>
+                                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                        กำลังบันทึกข้อมูล...
+                                    </>
+                                ) : (
+                                    <>
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" />
+                                        </svg>
+                                        ยืนยันการชำระเงิน
+                                    </>
+                                )}
                             </button>
                         </div>
                     </div>
