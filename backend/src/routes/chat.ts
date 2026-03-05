@@ -8,44 +8,61 @@ export const chatRoute = new Hono()
 // ==========================================
 chatRoute.post('/upload', async (c) => {
     try {
-        const formData = await c.req.formData()
-        const file = formData.get('file') as File
+        console.log('🚀 [Backend] Upload request received')
 
-        if (!file) {
+        // Use parseBody as it's often more reliable for multipart/form-data in Hono
+        const body = await c.req.parseBody()
+        const file = body['file']
+
+        // Type check and logging
+        if (!file || typeof file === 'string') {
+            console.error('❌ [Backend] No file in body or invalid format:', typeof file)
             return c.json({ error: 'No file provided' }, 400)
         }
 
-        const fileExt = file.name.split('.').pop()
+        const fileObject = file as unknown as File
+        const fileNameOriginal = fileObject.name || 'unnamed-file'
+        const fileType = fileObject.type || 'application/octet-stream'
+        const fileSize = fileObject.size || 0
+
+        console.log(`📁 [Backend] Processing: ${fileNameOriginal} (${fileType}, ${fileSize} bytes)`)
+
+        const fileExt = fileNameOriginal.split('.').pop() || 'bin'
         const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${fileExt}`
         const filePath = `chat/${fileName}`
 
-        const arrayBuffer = await file.arrayBuffer()
+        const arrayBuffer = await fileObject.arrayBuffer()
         const buffer = new Uint8Array(arrayBuffer)
 
+        console.log(`📤 [Backend] Uploading to Supabase Storage: ${filePath}`)
         const { error: uploadError } = await supabase.storage
             .from('chat-files')
             .upload(filePath, buffer, {
-                contentType: file.type,
+                contentType: fileType,
                 upsert: false,
             })
 
         if (uploadError) {
-            console.error('Upload error:', uploadError)
-            return c.json({ error: uploadError.message }, 400)
+            console.error('❌ [Backend] Supabase Storage Error:', uploadError)
+            return c.json({
+                error: uploadError.message || 'Supabase storage error',
+                details: uploadError
+            }, 400)
         }
 
         const { data: publicUrlData } = supabase.storage
             .from('chat-files')
             .getPublicUrl(filePath)
 
+        console.log('✅ [Backend] Upload successful:', publicUrlData.publicUrl)
         return c.json({
             url: publicUrlData.publicUrl,
-            name: file.name,
-            type: file.type,
+            name: fileNameOriginal,
+            type: fileType,
         })
     } catch (err: any) {
-        console.error('Unexpected error in upload:', err)
-        return c.json({ error: 'Internal Server Error' }, 500)
+        console.error('💥 [Backend] Unexpected server error:', err)
+        return c.json({ error: err.message || 'Internal Server Error' }, 500)
     }
 })
 
@@ -60,8 +77,13 @@ chatRoute.post('/send-message', async (c) => {
             return c.json({ error: 'Must provide either content or a file' }, 400)
         }
 
-        const insertData: any = { sender_type, room_id, is_read: false }
-        if (content) insertData.content = content
+        const insertData: any = {
+            sender_type,
+            room_id,
+            is_read: false,
+            content: content || '' // Ensure content is never null to satisfy DB constraints
+        }
+
         if (file_url) {
             insertData.file_url = file_url
             insertData.file_name = file_name

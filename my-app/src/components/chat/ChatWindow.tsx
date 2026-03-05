@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
+import { apiFetch } from '@/lib/api'
 import { Send, User, Store, Loader2, Search, MessageSquare, Paperclip, X, FileText, Image as ImageIcon, Download } from 'lucide-react'
 
 interface Message {
@@ -80,7 +81,7 @@ export default function ChatWindow({ roomId: initialRoomId, senderType, title: i
                 ? `${API_URL}/api/chat/rooms`
                 : `${API_URL}/api/chat/rooms?customer_id=${user.id}`
 
-            const res = await fetch(url)
+            const res = await apiFetch(url)
             const data = await res.json()
             setRooms(data)
 
@@ -116,7 +117,7 @@ export default function ChatWindow({ roomId: initialRoomId, senderType, title: i
 
         const fetchMessages = async () => {
             try {
-                const res = await fetch(`${API_URL}/api/chat/history/${activeRoomId}`)
+                const res = await apiFetch(`${API_URL}/api/chat/history/${activeRoomId}`)
                 const data = await res.json()
                 setMessages(data)
             } catch (err) {
@@ -129,16 +130,14 @@ export default function ChatWindow({ roomId: initialRoomId, senderType, title: i
         const markAsRead = async () => {
             try {
                 // 1. Reset room unread count
-                const p1 = fetch(`${API_URL}/api/chat/mark-as-read`, {
+                const p1 = apiFetch(`${API_URL}/api/chat/mark-as-read`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ room_id: activeRoomId, viewer_type: senderType }),
                 })
 
                 // 2. Mark individual messages as read
-                const p2 = fetch(`${API_URL}/api/chat/mark-messages-as-read`, {
+                const p2 = apiFetch(`${API_URL}/api/chat/mark-messages-as-read`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ room_id: activeRoomId, viewer_type: senderType }),
                 })
 
@@ -226,12 +225,24 @@ export default function ChatWindow({ roomId: initialRoomId, senderType, title: i
                 setIsUploading(true)
                 const formData = new FormData()
                 formData.append('file', selectedFile)
-                const uploadRes = await fetch(`${API_URL}/api/chat/upload`, {
+                const uploadRes = await apiFetch(`${API_URL}/api/chat/upload`, {
                     method: 'POST',
                     body: formData,
                 })
+
+                if (!uploadRes.ok) {
+                    const errorText = await uploadRes.text()
+                    let errorMessage = 'Upload failed'
+                    try {
+                        const errorJson = JSON.parse(errorText)
+                        errorMessage = errorJson.error || errorJson.message || errorMessage
+                    } catch (e) {
+                        errorMessage = errorText || errorMessage
+                    }
+                    throw new Error(errorMessage)
+                }
+
                 const uploadData = await uploadRes.json()
-                if (!uploadRes.ok) throw new Error(uploadData.error || 'Upload failed')
                 file_url = uploadData.url
                 file_name = uploadData.name
                 file_type = uploadData.type
@@ -239,9 +250,8 @@ export default function ChatWindow({ roomId: initialRoomId, senderType, title: i
             }
 
             // 2. Send message
-            const res = await fetch(`${API_URL}/api/chat/send-message`, {
+            const res = await apiFetch(`${API_URL}/api/chat/send-message`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     room_id: activeRoomId,
                     sender_id: user.id,
@@ -253,14 +263,27 @@ export default function ChatWindow({ roomId: initialRoomId, senderType, title: i
                 }),
             })
 
+            if (!res.ok) {
+                const errorText = await res.text()
+                let errorMessage = 'Failed to send message'
+                try {
+                    const errorJson = JSON.parse(errorText)
+                    errorMessage = errorJson.error || errorJson.message || errorMessage
+                } catch (e) {
+                    errorMessage = errorText || errorMessage
+                }
+                throw new Error(errorMessage)
+            }
+
             if (res.ok) {
                 if (overrideText === undefined) {
                     setNewMessage('')
                 }
                 clearSelectedFile()
             }
-        } catch (err) {
+        } catch (err: any) {
             console.error('Failed to send message:', err)
+            alert(`ไม่สามารถส่งข้อความได้: ${err.message || 'เกิดข้อผิดพลาดในการเชื่อมต่อ'}`)
         } finally {
             setIsSending(false)
             setIsUploading(false)

@@ -3,11 +3,12 @@
  */
 export async function apiFetch(url: string, options: RequestInit = {}) {
     // Ensure credentials are included by default for HttpOnly cookies
+    const isFormData = options.body instanceof FormData;
     const defaultOptions: RequestInit = {
         ...options,
         credentials: options.credentials || 'include',
         headers: {
-            'Content-Type': 'application/json',
+            ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
             ...options.headers,
         },
     };
