@@ -266,15 +266,30 @@ export default function TrackingPage() {
     const [viewingOrder, setViewingOrder] = useState<any | null>(null);
     const [loadingChat, setLoadingChat] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
+    const [shopMapsUrl, setShopMapsUrl] = useState<string | null>(null);
 
     useEffect(() => {
         fetchOrders();
+        fetchShopMap();
     }, []);
+
+    const fetchShopMap = async () => {
+        try {
+            const { data } = await supabase
+                .from('shops')
+                .select('maps_url')
+                .eq('id', 'b9652bb2-cba5-4440-9d89-0f93f598cb67')
+                .single();
+            if (data?.maps_url) setShopMapsUrl(data.maps_url);
+        } catch (e) {
+            console.error('Could not fetch shop map:', e);
+        }
+    };
 
     const fetchOrders = async () => {
         setIsLoading(true);
         try {
-            const userJson = localStorage.getItem('user');
+            const userJson = sessionStorage.getItem('user');
             const user = userJson ? JSON.parse(userJson) : null;
             if (!user?.id) return;
 
@@ -332,8 +347,8 @@ export default function TrackingPage() {
     const handleStartChat = async (orderId: string, price: number) => {
         setLoadingChat(true)
         try {
-            const user = JSON.parse(localStorage.getItem('user') || '{}')
-            const res = await fetch('http://localhost:3001/api/chat/get-or-create-room', {
+            const user = JSON.parse(sessionStorage.getItem('user') || '{}')
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/chat/get-or-create-room`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -411,16 +426,30 @@ export default function TrackingPage() {
 
                     <div className="p-8">
                         {/* Title */}
-                        <div className="flex items-center gap-3 mb-10">
-                            <div className="w-10 h-10 bg-gradient-to-br from-[#06B6D4] to-[#0891b2] rounded-xl flex items-center justify-center shadow-md shadow-[#06B6D4]/25">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-                                </svg>
+                        <div className="flex items-center justify-between mb-10">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 bg-gradient-to-br from-[#06B6D4] to-[#0891b2] rounded-xl flex items-center justify-center shadow-md shadow-[#06B6D4]/25">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h1 className="text-lg font-bold text-gray-800">การติดตามสถานะ</h1>
+                                    <p className="text-xs text-gray-400 mt-0.5">ติดตามออเดอร์ทั้งหมดของคุณ</p>
+                                </div>
                             </div>
-                            <div>
-                                <h1 className="text-lg font-bold text-gray-800">การติดตามสถานะ</h1>
-                                <p className="text-xs text-gray-400 mt-0.5">ติดตามออเดอร์ทั้งหมดของคุณ</p>
-                            </div>
+                            {shopMapsUrl && (
+                                <button
+                                    onClick={() => window.open(shopMapsUrl, '_blank')}
+                                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-[#06B6D4] to-[#0891b2] text-white text-xs font-bold shadow-md shadow-[#06B6D4]/20 hover:shadow-lg hover:shadow-[#06B6D4]/30 hover:-translate-y-0.5 active:scale-95 transition-all duration-200"
+                                >
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                                        <circle cx="12" cy="10" r="3" />
+                                    </svg>
+                                    ดูตำแหน่งร้าน
+                                </button>
+                            )}
                         </div>
 
                         {/* ===== Status Filter Icons ===== */}

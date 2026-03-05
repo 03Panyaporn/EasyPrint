@@ -12,7 +12,7 @@ export default function CustomerChatRedirect() {
     useEffect(() => {
         async function startChat() {
             try {
-                const user = JSON.parse(localStorage.getItem('user') || '{}')
+                const user = JSON.parse(sessionStorage.getItem('user') || '{}')
                 if (!user.id) {
                     window.location.href = '/auth/login'
                     return

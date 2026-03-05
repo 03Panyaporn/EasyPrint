@@ -54,7 +54,7 @@ export default function OrdersPage() {
 
     useEffect(() => {
         try {
-            const user = localStorage.getItem('user')
+            const user = sessionStorage.getItem('user')
             if (user) {
                 const parsed = JSON.parse(user)
                 setUserName(parsed.name || parsed.email || "ร้านค้า")

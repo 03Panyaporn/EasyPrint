@@ -4,35 +4,18 @@ import Link from "next/link"
 import { useCart } from "@/context/CartContext"
 import { useChatUnread } from "@/hooks/useChatUnread"
 
+import { useAuth } from "@/context/AuthContext"
+
 export default function Navbar() {
     const { cartCount } = useCart();
     const [showLogoutModal, setShowLogoutModal] = useState(false)
+    const { user, logout } = useAuth()
 
     // Use the custom hook for unread count
-    const user = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || '{}') : {}
-    const unreadCount = useChatUnread({ userId: user.id, userType: 'customer' })
+    const unreadCount = useChatUnread({ userId: user?.id, userType: 'customer' })
 
     const handleLogout = async () => {
-        try {
-            const token = localStorage.getItem('access_token')
-            await fetch('http://localhost:3001/api/auth/logout', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
-            })
-        } catch {
-            // ไม่ว่า logout API จะสำเร็จหรือไม่ ก็ลบ token ฝั่ง client อยู่ดี
-        }
-
-        localStorage.removeItem('access_token')
-        localStorage.removeItem('refresh_token')
-        localStorage.removeItem('user')
-
-        document.cookie = 'access_token=; path=/; max-age=0'
-        document.cookie = 'user_role=; path=/; max-age=0'
-
-        window.location.href = '/'
+        await logout()
     }
 
     return (

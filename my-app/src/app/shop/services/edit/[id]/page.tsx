@@ -105,7 +105,7 @@ export default function EditServicePage() {
     const handleUpdateService = async () => {
         setLoading(true)
         try {
-            const userJson = localStorage.getItem('user')
+            const userJson = sessionStorage.getItem('user')
             const user = userJson ? JSON.parse(userJson) : null
 
             if (!user?.id) {

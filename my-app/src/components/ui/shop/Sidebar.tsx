@@ -33,20 +33,17 @@ const bottomMenuItems = [
 
 import { useChatUnread } from "@/hooks/useChatUnread"
 
+import { useAuth } from "@/context/AuthContext"
+
 export default function Sidebar() {
     const pathname = usePathname()
     const [showLogoutModal, setShowLogoutModal] = useState(false)
+    const { user, logout } = useAuth()
 
-    const user = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || '{}') : {}
-    const unreadChatsCount = useChatUnread({ userId: user.id, userType: 'merchant' })
+    const unreadChatsCount = useChatUnread({ userId: user?.id, userType: 'merchant' })
 
-    const handleLogout = () => {
-        localStorage.removeItem('access_token')
-        localStorage.removeItem('refresh_token')
-        localStorage.removeItem('user')
-        document.cookie = 'access_token=; path=/; max-age=0'
-        document.cookie = 'user_role=; path=/; max-age=0'
-        window.location.href = '/'
+    const handleLogout = async () => {
+        await logout()
     }
 
     const isActive = (href: string) => {

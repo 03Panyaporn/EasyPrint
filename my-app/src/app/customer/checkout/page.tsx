@@ -145,7 +145,7 @@ export default function CheckoutPage() {
 
         try {
             // Get user
-            const userJson = localStorage.getItem('user');
+            const userJson = sessionStorage.getItem('user');
             const user = userJson ? JSON.parse(userJson) : null;
 
             if (!user?.id) {

@@ -1,4 +1,5 @@
 import { Hono } from 'hono'
+import { setCookie, deleteCookie } from 'hono/cookie'
 import { supabase } from '../lib/supabase.js'
 import { SignJWT } from 'jose'
 
@@ -20,8 +21,12 @@ authRoute.post('/register', async (c) => {
             return c.json({ error: 'กรุณากรอกข้อมูลให้ครบ (email, password, name)' }, 400)
         }
 
-        if (password.length < 6) {
-            return c.json({ error: 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร' }, 400)
+        if (password.length < 8) {
+            return c.json({ error: 'รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร' }, 400)
+        }
+
+        if (!/[a-zA-Z]/.test(password)) {
+            return c.json({ error: 'รหัสผ่านต้องมีตัวอักษรภาษาอังกฤษอย่างน้อย 1 ตัว' }, 400)
         }
 
         // สมัครสมาชิกผ่าน Supabase Auth
@@ -74,13 +79,29 @@ authRoute.post('/login', async (c) => {
             return c.json({ error: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง' }, 401)
         }
 
+        const role = data.user.user_metadata?.role || 'customer'
+
+        // เซ็ต HttpOnly Cookies
+        setCookie(c, 'access_token', data.session.access_token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'Lax',
+            path: '/',
+        })
+        setCookie(c, 'user_role', role, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'Lax',
+            path: '/',
+        })
+
         return c.json({
             message: 'เข้าสู่ระบบสำเร็จ!',
             user: {
                 id: data.user.id,
                 email: data.user.email,
                 name: data.user.user_metadata?.name,
-                role: data.user.user_metadata?.role || 'customer', // Default เป็น customer
+                role: role,
             },
             session: {
                 access_token: data.session.access_token,
@@ -101,15 +122,56 @@ authRoute.post('/login', async (c) => {
 // ==========================================
 authRoute.post('/logout', async (c) => {
     try {
-        const { error } = await supabase.auth.signOut()
+        await supabase.auth.signOut()
 
-        if (error) {
-            return c.json({ error: error.message }, 400)
-        }
+        // ลบ HttpOnly Cookies
+        deleteCookie(c, 'access_token', { path: '/' })
+        deleteCookie(c, 'user_role', { path: '/' })
 
         return c.json({ message: 'ออกจากระบบสำเร็จ!' })
     } catch (err) {
         console.error('Logout error:', err)
+        return c.json({ error: 'เกิดข้อผิดพลาดในระบบ' }, 500)
+    }
+})
+
+// ==========================================
+// POST /api/auth/refresh — ต่ออายุโทเค็น
+// ==========================================
+authRoute.post('/refresh', async (c) => {
+    try {
+        const { refresh_token } = await c.req.json()
+
+        if (!refresh_token) {
+            return c.json({ error: 'Refresh token is required' }, 400)
+        }
+
+        const { data, error } = await supabase.auth.refreshSession({
+            refresh_token,
+        })
+
+        if (error || !data.session) {
+            return c.json({ error: 'Invalid or expired refresh token' }, 401)
+        }
+
+        // อัปเดต HttpOnly Cookies ด้วย Access Token ใหม่
+        setCookie(c, 'access_token', data.session.access_token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'Lax',
+            path: '/',
+        })
+
+        return c.json({
+            message: 'Refresh successful',
+            session: {
+                access_token: data.session.access_token,
+                refresh_token: data.session.refresh_token,
+                expires_at: data.session.expires_at,
+            },
+        })
+    } catch (err) {
+        console.error('Refresh error:', err)
         return c.json({ error: 'เกิดข้อผิดพลาดในระบบ' }, 500)
     }
 })

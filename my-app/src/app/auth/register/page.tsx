@@ -24,14 +24,20 @@ export default function RegisterPage() {
             return
         }
 
-        if (password.length < 6) {
-            setError('รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร')
+        if (password.length < 8) {
+            setError('รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร')
+            setLoading(false)
+            return
+        }
+
+        if (!/[a-zA-Z]/.test(password)) {
+            setError('รหัสผ่านต้องมีตัวอักษรภาษาอังกฤษอย่างน้อย 1 ตัว')
             setLoading(false)
             return
         }
 
         try {
-            const res = await fetch('http://localhost:3001/api/auth/register', {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/auth/register`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password, name }),
@@ -57,7 +63,7 @@ export default function RegisterPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-100">
+        <div className="min-h-screen bg-white">
             {/* Navbar */}
             <nav className="bg-white shadow-sm border-b border-gray-200">
                 <div className="max-w-7xl mx-auto px-6 flex items-center justify-between h-16">

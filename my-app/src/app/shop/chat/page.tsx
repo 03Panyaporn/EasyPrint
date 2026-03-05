@@ -34,7 +34,7 @@ export default function ShopInboxPage() {
 
     const fetchRooms = async () => {
         try {
-            const user = JSON.parse(localStorage.getItem('user') || '{}')
+            const user = JSON.parse(sessionStorage.getItem('user') || '{}')
             console.log("🏪 Shop Inbox - Logged in as:", user.id, user.email)
 
             const res = await fetch(`${API_URL}/api/chat/rooms?merchant_id=${user.id}`)
@@ -50,7 +50,7 @@ export default function ShopInboxPage() {
     }
 
     useEffect(() => {
-        const user = JSON.parse(localStorage.getItem('user') || '{}')
+        const user = JSON.parse(sessionStorage.getItem('user') || '{}')
         if (!user.id) return
 
         // Subscribe to new rooms for this merchant

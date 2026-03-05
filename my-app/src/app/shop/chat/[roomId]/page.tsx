@@ -11,7 +11,7 @@ export default function ShopChatPage({ params }: { params: Promise<{ roomId: str
     useEffect(() => {
         async function fetchRoomDetails() {
             try {
-                const res = await fetch(`http://localhost:3001/api/chat/rooms`)
+                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/chat/rooms`)
                 const rooms = await res.json()
                 const room = rooms.find((r: any) => r.id === roomId)
                 if (room) {
