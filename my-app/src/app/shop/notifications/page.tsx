@@ -27,6 +27,7 @@ export default function NotificationsPage() {
     const [filter, setFilter] = useState<"all" | "unread">("all")
     const [readIds, setReadIds] = useState<string[]>([])
     const [deletedIds, setDeletedIds] = useState<string[]>([])
+    const [receivedIds, setReceivedIds] = useState<string[]>([])
     const [isLoading, setIsLoading] = useState(true)
 
     useEffect(() => {
@@ -35,18 +36,66 @@ export default function NotificationsPage() {
 
         const savedDel = localStorage.getItem(STORAGE_KEY_DEL)
         if (savedDel) setDeletedIds(JSON.parse(savedDel))
+
+        const savedRecv = localStorage.getItem('easyprint_notifications_received')
+        if (savedRecv) setReceivedIds(JSON.parse(savedRecv))
     }, [])
 
     const fetchOrdersAsNotifications = async () => {
         try {
+            // First fetch the shop's notification preferences
+            const { data: shopData, error: shopError } = await supabase
+                .from('shops')
+                .select('notify_new_orders, notify_order_cancellations, notify_new_messages')
+                .eq('id', 'b9652bb2-cba5-4440-9d89-0f93f598cb67')
+                .single();
+
+            if (shopError) console.error("Error fetching shop settings for notifications:", shopError);
+
+            const wantsNewOrders = shopData?.notify_new_orders ?? true;
+            const wantsCancellations = shopData?.notify_order_cancellations ?? true;
+            const wantsNewMessages = shopData?.notify_new_messages ?? true;
+
             const { data, error } = await supabase
                 .from('orders')
-                .select(`id, created_at, status, total_price, order_items (*)`)
+                .select(`id, created_at, updated_at, status, total_price, order_items (*)`)
                 .order('created_at', { ascending: false });
 
-            if (data && !error) {
-                const notifs = data
-                    .filter(o => o.status === 'รอตรวจสอบสลิป' || o.status === 'ยกเลิก')
+            let chatRooms: any[] = [];
+            try {
+                const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+                const res = await fetch(`${API_URL}/api/chat/rooms`);
+                if (res.ok) {
+                    chatRooms = await res.json();
+                }
+            } catch (e) {
+                console.error("Failed to fetch chat rooms:", e);
+            }
+
+            if ((data && !error) || chatRooms.length > 0) {
+                // Get the current received set so we don't depend on stale closure state
+                const currentRecvStr = localStorage.getItem('easyprint_notifications_received');
+                let currentReceivedIds: string[] = currentRecvStr ? JSON.parse(currentRecvStr) : [];
+                let hasNewReceived = false;
+
+                const notifs = (data || [])
+                    .filter(o => {
+                        const notifId = `${o.id}-${o.status}`;
+                        // If it's already in the received list, we keep it regardless of current settings
+                        if (currentReceivedIds.includes(notifId)) return true;
+
+                        // Otherwise, check current settings
+                        let shouldKeep = false;
+                        if (o.status === 'รอตรวจสอบสลิป' && wantsNewOrders) shouldKeep = true;
+                        if (o.status === 'ยกเลิก' && wantsCancellations) shouldKeep = true;
+
+                        if (shouldKeep) {
+                            currentReceivedIds.push(notifId);
+                            hasNewReceived = true;
+                        }
+
+                        return shouldKeep;
+                    })
                     .map(order => {
                         const isCancel = order.status === 'ยกเลิก';
                         const notifId = `${order.id}-${order.status}`;
@@ -61,7 +110,7 @@ export default function NotificationsPage() {
                         const dateStr = new Date(order.created_at).toISOString().split('T')[0].replace(/-/g, '');
                         const shortId = `ORD-${dateStr}-${order.id.split('-')[0].substring(0, 4).toUpperCase()}`;
 
-                        const timeDiff = Date.now() - new Date(order.created_at).getTime();
+                        const timeDiff = Date.now() - new Date(isCancel ? (order.updated_at || order.created_at) : order.created_at).getTime();
                         const hours = Math.floor(timeDiff / (1000 * 60 * 60));
                         const minutes = Math.floor((timeDiff / (1000 * 60)) % 60);
                         const timeStr = hours > 0 ? `${hours} ชั่วโมงที่แล้ว` : minutes > 0 ? `${minutes} นาทีที่แล้ว` : `เพิ่งเริ่มต้น`;
@@ -83,9 +132,58 @@ export default function NotificationsPage() {
                             icon: isCancel ? XCircle : ShoppingCart,
                             iconBg: isCancel ? "bg-red-50/80" : "bg-[#E0F7FA]",
                             iconColor: isCancel ? "text-red-500" : "text-[#06B6D4]",
+                            createdAt: isCancel ? (order.updated_at || order.created_at) : order.created_at,
+                            link: `/shop/orders`
                         }
                     });
-                setNotifications(notifs);
+
+                const chatNotifs = chatRooms
+                    .filter(room => {
+                        const notifId = `chat-${room.id}-${room.updated_at}`;
+                        if (currentReceivedIds.includes(notifId)) return true;
+
+                        let shouldKeep = false;
+                        if (room.unread_count > 0 && wantsNewMessages) shouldKeep = true;
+
+                        if (shouldKeep) {
+                            currentReceivedIds.push(notifId);
+                            hasNewReceived = true;
+                        }
+                        return shouldKeep;
+                    })
+                    .map(room => {
+                        const notifId = `chat-${room.id}-${room.updated_at}`;
+                        const name = room.customer?.raw_user_meta_data?.name || room.customer?.email || `ลูกค้า #${room.customer_id.slice(0, 8)}`;
+                        const timeDiff = Date.now() - new Date(room.updated_at).getTime();
+                        const hours = Math.floor(timeDiff / (1000 * 60 * 60));
+                        const minutes = Math.floor((timeDiff / (1000 * 60)) % 60);
+                        const timeStr = hours > 0 ? `${hours} ชั่วโมงที่แล้ว` : minutes > 0 ? `${minutes} นาทีที่แล้ว` : `เพิ่งเริ่มต้น`;
+
+                        return {
+                            id: notifId,
+                            realOrderId: room.id,
+                            type: "message",
+                            title: "มีข้อความใหม่",
+                            orderId: "แชท",
+                            fileInfo: room.last_message || "ส่งข้อความใหม่",
+                            totalPrice: null,
+                            description: `ลูกค้า ${name} ส่งข้อความมาหาคุณ`,
+                            time: timeStr,
+                            icon: MessageSquare,
+                            iconBg: "bg-blue-50/80",
+                            iconColor: "text-blue-500",
+                            createdAt: room.updated_at,
+                            link: `/shop/chat/${room.id}`
+                        };
+                    });
+
+                if (hasNewReceived) {
+                    setReceivedIds([...currentReceivedIds]);
+                    localStorage.setItem('easyprint_notifications_received', JSON.stringify(currentReceivedIds));
+                }
+
+                const allNotifs = [...notifs, ...chatNotifs].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+                setNotifications(allNotifs);
             }
         } catch (error) {
             console.error("Failed to fetch notifications:", error);
@@ -100,6 +198,9 @@ export default function NotificationsPage() {
         const channel = supabase
             .channel('notifications_orders_updater')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
+                fetchOrdersAsNotifications();
+            })
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'chat_rooms' }, () => {
                 fetchOrdersAsNotifications();
             })
             .subscribe()
@@ -203,6 +304,8 @@ export default function NotificationsPage() {
                                     handleMarkAsRead(notification.id);
                                     if (notification.type === 'order' || notification.type === 'cancel') {
                                         router.push(`/shop/orders?highlight=${notification.realOrderId}`);
+                                    } else if (notification.type === 'message') {
+                                        router.push(`/shop/chat/${notification.realOrderId}`);
                                     }
                                 }}
                                 className={`bg-white rounded-[14px] p-5 border shadow-sm flex items-center justify-between transition-all hover:-translate-y-0.5 hover:shadow-md cursor-pointer ${!readIds.includes(notification.id) ? 'border-l-[5px] border-l-[#06B6D4] border-y-gray-100 border-r-gray-100' : 'border-gray-100 border-l-[5px] border-l-transparent'}`}
@@ -214,27 +317,47 @@ export default function NotificationsPage() {
                                     <div className="flex flex-col gap-1 min-w-0">
                                         <div className="flex items-center gap-2">
                                             <h3 className="font-bold text-[#1e293b] text-[15px]">{notification.title}</h3>
+                                            <p className="text-[13px] text-gray-500 mt-1 line-clamp-1">{notification.description}</p>
+                                            <p className="text-[#94a3b8] text-[11px] font-medium ml-auto">{notification.time}</p>
                                         </div>
-                                        <div className="flex items-center gap-2 flex-wrap">
-                                            <span className="text-[12px] font-semibold text-[#06B6D4] bg-[#E0F7FA] px-2 py-0.5 rounded-md">
-                                                {notification.orderId}
-                                            </span>
-                                            <span className="text-gray-400 text-[13px]">•</span>
-                                            <span className="text-gray-500 text-[13px] font-medium">{notification.description}</span>
-                                        </div>
-                                        {notification.fileInfo && (
-                                            <div className="flex items-center gap-2 flex-wrap">
-                                                <span className="text-[12px] text-[#64748b] bg-gray-100 px-2 py-0.5 rounded-md font-medium truncate max-w-[200px]">
-                                                    📄 {notification.fileInfo}
-                                                </span>
+
+                                        {notification.type !== "message" && (
+                                            <div className="mt-3 flex items-center gap-4">
+                                                <div className="flex items-center gap-1.5 px-2.5 py-1 bg-gray-50 rounded-md border border-gray-100/50">
+                                                    <span className="text-gray-400 font-medium text-[10px]">หมายเลข</span>
+                                                    <span className="text-[#334155] font-bold text-[11px]">{notification.orderId}</span>
+                                                </div>
+
+                                                {notification.fileInfo && (
+                                                    <div className="flex items-center gap-1.5">
+                                                        <div className="w-1.5 h-1.5 rounded-full bg-cyan-400"></div>
+                                                        <span className="text-[#64748b] text-[11px] font-medium truncate max-w-[120px]">
+                                                            {notification.fileInfo}
+                                                        </span>
+                                                    </div>
+                                                )}
+
                                                 {notification.totalPrice && (
-                                                    <span className="text-[12px] text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md font-bold">
-                                                        ฿ {notification.totalPrice}
-                                                    </span>
+                                                    <div className="flex items-center gap-1.5 ml-auto">
+                                                        <div className="w-5 h-5 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-500">
+                                                            <DollarSign size={10} strokeWidth={3} />
+                                                        </div>
+                                                        <span className="text-emerald-600 font-bold text-[11px]">฿{notification.totalPrice}</span>
+                                                    </div>
                                                 )}
                                             </div>
                                         )}
-                                        <p className="text-[#94a3b8] text-[11px] font-medium">{notification.time}</p>
+
+                                        {notification.type === "message" && (
+                                            <div className="mt-3 flex items-center gap-4">
+                                                <div className="flex items-center gap-1.5 px-2.5 py-1 bg-gray-50 rounded-md border border-gray-100/50">
+                                                    <MessageSquare className="w-3 h-3 text-gray-400" />
+                                                    <span className="text-[#64748b] text-[11px] font-medium truncate max-w-[200px]">
+                                                        {notification.fileInfo}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
 

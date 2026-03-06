@@ -136,6 +136,47 @@ authRoute.post('/logout', async (c) => {
 })
 
 // ==========================================
+// POST /api/auth/change-password — เปลี่ยนรหัสผ่าน
+// ==========================================
+authRoute.post('/change-password', async (c) => {
+    try {
+        const { email, currentPassword, newPassword } = await c.req.json()
+
+        if (!email || !currentPassword || !newPassword) {
+            return c.json({ error: 'กรุณากรอกข้อมูลให้ครบ' }, 400)
+        }
+
+        if (newPassword.length < 8) {
+            return c.json({ error: 'รหัสผ่านใหม่ต้องมีอย่างน้อย 8 ตัวอักษร' }, 400)
+        }
+
+        // 1. ลองล็อกอินด้วยรหัสผ่านเดิมก่อนเพื่อตรวจสอบ
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+            email,
+            password: currentPassword,
+        })
+
+        if (signInError) {
+            return c.json({ error: 'รหัสผ่านปัจจุบันไม่ถูกต้อง' }, 401)
+        }
+
+        // 2. ถ้าถูก ให้อัปเดตรหัสผ่านใหม่
+        const { error: updateError } = await supabase.auth.updateUser({
+            password: newPassword
+        })
+
+        if (updateError) {
+            return c.json({ error: updateError.message }, 400)
+        }
+
+        return c.json({ message: 'เปลี่ยนรหัสผ่านสำเร็จ!' })
+    } catch (err) {
+        console.error('Change password error:', err)
+        return c.json({ error: 'เกิดข้อผิดพลาดในการเปลี่ยนรหัสผ่าน' }, 500)
+    }
+})
+
+// ==========================================
 // POST /api/auth/refresh — ต่ออายุโทเค็น
 // ==========================================
 authRoute.post('/refresh', async (c) => {
