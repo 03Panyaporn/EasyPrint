@@ -24,6 +24,7 @@ interface CartContextType {
     addToCart: (item: CartItem) => void;
     removeFromCart: (id: string) => void;
     clearCart: () => void;
+    removeSelectedItems: () => void;
     toggleSelect: (id: string) => void;
     selectAll: () => void;
     clearSelection: () => void;
@@ -46,6 +47,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
     const clearCart = () => { setCartItems([]); setSelectedIds(new Set()); };
 
+    const removeSelectedItems = () => {
+        setCartItems(prev => prev.filter(item => !selectedIds.has(item.id)));
+        setSelectedIds(new Set());
+    };
+
     const toggleSelect = (id: string) => {
         setSelectedIds((prev) => {
             const n = new Set(prev);
@@ -63,7 +69,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         <CartContext.Provider value={{
             cartItems, cartCount: cartItems.length,
             selectedIds, selectedItems,
-            addToCart, removeFromCart, clearCart,
+            addToCart, removeFromCart, clearCart, removeSelectedItems,
             toggleSelect, selectAll, clearSelection,
         }}>
             {children}

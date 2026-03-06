@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react"
 import Link from "next/link"
-import { Search, Plus, Edit2, Trash2, FileText, Settings, Loader2 } from "lucide-react"
+import { Search, Plus, Edit2, Trash2, FileText, Settings, Loader2, X, Pencil, Check } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 
 export default function ServicesPage() {
@@ -15,7 +15,14 @@ export default function ServicesPage() {
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
     const [serviceToDelete, setServiceToDelete] = useState<string | null>(null)
     const [showToast, setShowToast] = useState(false)
+    const [toastMessage, setToastMessage] = useState("")
     const [isDeleting, setIsDeleting] = useState(false)
+
+    // Category Management State
+    const [editingCategory, setEditingCategory] = useState<string | null>(null)
+    const [editCategoryName, setEditCategoryName] = useState("")
+    const [categoryToDelete, setCategoryToDelete] = useState<string | null>(null)
+    const [isCategoryDeleteModalOpen, setIsCategoryDeleteModalOpen] = useState(false)
 
     useEffect(() => {
         fetchServices()
@@ -56,6 +63,59 @@ export default function ServicesPage() {
         setActiveTab(tab)
     }
 
+    // ─── CATEGORY MANAGEMENT ───
+    const defaultTabs = ["ทั้งหมด", "เอกสาร", "รูปภาพ", "โปสเตอร์", "นามบัตร"]
+
+    const handleEditCategory = async (oldName: string) => {
+        const newName = editCategoryName.trim()
+        if (!newName || newName === oldName) {
+            setEditingCategory(null)
+            return
+        }
+        try {
+            const { error } = await supabase
+                .from('services')
+                .update({ category: newName, name: newName })
+                .eq('category', oldName)
+            if (error) throw error
+            setServices(prev => prev.map(s => s.category === oldName ? { ...s, category: newName, name: newName } : s))
+            if (activeTab === oldName) setActiveTab(newName)
+            setToastMessage(`เปลี่ยนชื่อประเภท "${oldName}" เป็น "${newName}" เรียบร้อย`)
+            setShowToast(true)
+            setTimeout(() => setShowToast(false), 3000)
+        } catch (error: any) {
+            console.error('Error renaming category:', error.message)
+            alert('เกิดข้อผิดพลาด: ' + error.message)
+        } finally {
+            setEditingCategory(null)
+        }
+    }
+
+    const handleDeleteCategory = async () => {
+        if (!categoryToDelete) return
+        setIsDeleting(true)
+        try {
+            // Delete all services in this category
+            const { error } = await supabase
+                .from('services')
+                .delete()
+                .eq('category', categoryToDelete)
+            if (error) throw error
+            setServices(prev => prev.filter(s => s.category !== categoryToDelete))
+            if (activeTab === categoryToDelete) setActiveTab('ทั้งหมด')
+            setToastMessage(`ลบประเภท "${categoryToDelete}" และบริการทั้งหมดเรียบร้อย`)
+            setShowToast(true)
+            setTimeout(() => setShowToast(false), 3000)
+        } catch (error: any) {
+            console.error('Error deleting category:', error.message)
+            alert('เกิดข้อผิดพลาด: ' + error.message)
+        } finally {
+            setIsDeleting(false)
+            setIsCategoryDeleteModalOpen(false)
+            setCategoryToDelete(null)
+        }
+    }
+
     const handleDeleteClick = (id: string) => {
         setServiceToDelete(id)
         setIsDeleteModalOpen(true)
@@ -75,6 +135,7 @@ export default function ServicesPage() {
 
             // Update local state after successful delete
             setServices(prev => prev.filter(service => service.id !== serviceToDelete))
+            setToastMessage('ลบสินค้าเรียบร้อยแล้ว!')
             setShowToast(true)
             setTimeout(() => {
                 setShowToast(false)
@@ -92,6 +153,20 @@ export default function ServicesPage() {
     const cancelDelete = () => {
         setIsDeleteModalOpen(false)
         setServiceToDelete(null)
+    }
+
+    const handleToggleStatus = async (serviceId: string, currentStatus: string) => {
+        const newStatus = currentStatus === 'ปิดใช้งาน' ? 'ใช้งาน' : 'ปิดใช้งาน'
+        try {
+            const { error } = await supabase
+                .from('services')
+                .update({ status: newStatus })
+                .eq('id', serviceId)
+            if (error) throw error
+            setServices(prev => prev.map(s => s.id === serviceId ? { ...s, status: newStatus } : s))
+        } catch (error: any) {
+            console.error('Error toggling status:', error.message)
+        }
     }
 
     const getCategoryIcon = (category: string) => {
@@ -144,18 +219,87 @@ export default function ServicesPage() {
 
                         {/* Tabs */}
                         <div className="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0 scrollbar-hide">
-                            {["ทั้งหมด", "เอกสาร", "งานปริ้น", "ถ่ายเอกสาร", "โปสเตอร์", "รูปภาพ", "นามบัตร", "งานหลังพิมพ์"].map((tab) => (
-                                <button
-                                    key={tab}
-                                    onClick={() => handleTabChange(tab)}
-                                    className={`whitespace-nowrap px-4 py-2 rounded-xl text-sm font-medium transition-all ${activeTab === tab
-                                        ? "text-[#455a64] bg-[#F8FAFC]"
-                                        : "text-[#90a4ae] hover:text-[#455a64] hover:bg-gray-50"
-                                        }`}
-                                >
-                                    {tab}
-                                </button>
-                            ))}
+                            {(() => {
+                                const extraCategories = services
+                                    .map(s => s.category)
+                                    .filter((cat): cat is string => !!cat && !defaultTabs.includes(cat));
+                                const uniqueExtras = [...new Set(extraCategories)];
+                                const allTabs = [...defaultTabs, ...uniqueExtras];
+                                return allTabs.map((tab) => {
+                                    const isCustom = !defaultTabs.includes(tab);
+                                    const isEditing = editingCategory === tab;
+
+                                    if (isEditing) {
+                                        return (
+                                            <div key={tab} className="flex items-center gap-1 bg-white border-2 border-[#06B6D4] rounded-xl px-2 py-1 shadow-sm">
+                                                <input
+                                                    type="text"
+                                                    value={editCategoryName}
+                                                    onChange={(e) => setEditCategoryName(e.target.value)}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter') handleEditCategory(tab);
+                                                        if (e.key === 'Escape') setEditingCategory(null);
+                                                    }}
+                                                    className="w-24 text-sm text-[#455a64] bg-transparent border-none outline-none font-medium"
+                                                    autoFocus
+                                                />
+                                                <button
+                                                    onClick={() => handleEditCategory(tab)}
+                                                    className="p-1 text-emerald-500 hover:bg-emerald-50 rounded-lg transition-colors"
+                                                >
+                                                    <Check size={14} strokeWidth={3} />
+                                                </button>
+                                                <button
+                                                    onClick={() => setEditingCategory(null)}
+                                                    className="p-1 text-gray-400 hover:bg-gray-100 rounded-lg transition-colors"
+                                                >
+                                                    <X size={14} />
+                                                </button>
+                                            </div>
+                                        );
+                                    }
+
+                                    return (
+                                        <div key={tab} className="relative group/tab flex items-center">
+                                            <button
+                                                onClick={() => handleTabChange(tab)}
+                                                className={`whitespace-nowrap px-4 py-2 rounded-xl text-sm font-medium transition-all ${activeTab === tab
+                                                    ? "text-[#455a64] bg-[#F8FAFC]"
+                                                    : "text-[#90a4ae] hover:text-[#455a64] hover:bg-gray-50"
+                                                    } ${isCustom ? 'pr-14' : ''}`}
+                                            >
+                                                {tab}
+                                            </button>
+                                            {isCustom && (
+                                                <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-0.5 opacity-0 group-hover/tab:opacity-100 transition-opacity">
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setEditingCategory(tab);
+                                                            setEditCategoryName(tab);
+                                                        }}
+                                                        className="p-1 text-[#90a4ae] hover:text-[#06B6D4] hover:bg-[#E0F7FA] rounded-md transition-all"
+                                                        title="แก้ไขชื่อประเภท"
+                                                    >
+                                                        <Pencil size={12} />
+                                                    </button>
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setCategoryToDelete(tab);
+                                                            setIsCategoryDeleteModalOpen(true);
+                                                        }}
+                                                        className="p-1 text-[#90a4ae] hover:text-rose-500 hover:bg-rose-50 rounded-md transition-all"
+                                                        title="ลบประเภท"
+                                                    >
+                                                        <X size={12} />
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                });
+                            })()}
                         </div>
                     </div>
                 </div>
@@ -226,10 +370,20 @@ export default function ServicesPage() {
                                                     {service.unit}
                                                 </td>
                                                 <td className="px-6 py-4 text-center">
-                                                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-600">
-                                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                                                        {service.status || 'ใช้งาน'}
-                                                    </span>
+                                                    <div className="flex items-center justify-center gap-2">
+                                                        <label className="relative inline-flex items-center cursor-pointer">
+                                                            <input
+                                                                type="checkbox"
+                                                                className="sr-only peer"
+                                                                checked={(service.status || 'ใช้งาน') !== 'ปิดใช้งาน'}
+                                                                onChange={() => handleToggleStatus(service.id, service.status || 'ใช้งาน')}
+                                                            />
+                                                            <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500 shadow-inner"></div>
+                                                        </label>
+                                                        <span className={`text-xs font-medium ${(service.status || 'ใช้งาน') === 'ปิดใช้งาน' ? 'text-gray-400' : 'text-emerald-600'}`}>
+                                                            {(service.status || 'ใช้งาน') === 'ปิดใช้งาน' ? 'ปิดใช้งาน' : 'ใช้งาน'}
+                                                        </span>
+                                                    </div>
                                                 </td>
                                                 <td className="px-6 py-4 text-right">
                                                     <div className="flex items-center justify-end gap-2">
@@ -297,6 +451,39 @@ export default function ServicesPage() {
                 </div>
             )}
 
+            {/* ── Category Delete Confirmation Modal ── */}
+            {isCategoryDeleteModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm transition-all duration-300 animate-in fade-in">
+                    <div className="bg-white rounded-3xl p-6 md:p-8 max-w-sm w-full shadow-2xl animate-in zoom-in-95 duration-200">
+                        <div className="flex flex-col items-center text-center space-y-4">
+                            <div className="w-16 h-16 bg-amber-50 text-amber-500 rounded-full flex items-center justify-center mb-2">
+                                <Trash2 size={32} />
+                            </div>
+                            <h3 className="text-xl font-bold text-[#455a64]">ลบประเภท "{categoryToDelete}"?</h3>
+                            <p className="text-sm text-[#90a4ae]">
+                                บริการทั้งหมดในประเภทนี้จะถูกลบออกไปด้วย คุณแน่ใจหรือไม่?
+                            </p>
+                            <div className="flex w-full gap-3 mt-6">
+                                <button
+                                    onClick={() => { setIsCategoryDeleteModalOpen(false); setCategoryToDelete(null); }}
+                                    disabled={isDeleting}
+                                    className="flex-1 py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold rounded-2xl transition-all disabled:opacity-50"
+                                >
+                                    ยกเลิก
+                                </button>
+                                <button
+                                    onClick={handleDeleteCategory}
+                                    disabled={isDeleting}
+                                    className="flex-1 py-3 px-4 bg-red-500 hover:bg-red-600 text-white font-bold rounded-2xl transition-all shadow-md shadow-red-500/30 flex items-center justify-center gap-2 disabled:opacity-50"
+                                >
+                                    {isDeleting ? <Loader2 size={18} className="animate-spin" /> : "ลบประเภท"}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* ── Success Toast ── */}
             <div className={`fixed bottom-6 right-6 z-50 transition-all duration-500 ${showToast ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"}`}>
                 <div className="flex items-center gap-3 bg-white border border-green-200 shadow-xl rounded-2xl px-5 py-3.5">
@@ -306,7 +493,7 @@ export default function ServicesPage() {
                         </svg>
                     </div>
                     <div>
-                        <p className="text-sm font-semibold text-gray-700">ลบสินค้าเรียบร้อยแล้ว!</p>
+                        <p className="text-sm font-semibold text-gray-700">{toastMessage || 'ดำเนินการเรียบร้อยแล้ว!'}</p>
                     </div>
                 </div>
             </div>

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import Link from "next/link"
 import {
     Search,
@@ -8,8 +8,6 @@ import {
     ShoppingBag,
     Clock,
     TrendingUp,
-    MoreHorizontal,
-    ChevronDown,
     Eye,
     Receipt,
     FileText,
@@ -24,105 +22,17 @@ import {
 } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import MerchantProfile from "@/components/ui/shop/MerchantProfile"
+    ShoppingCart,
+} from "lucide-react"
+import { supabase } from "@/lib/supabase"
+import {
+    BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
+    ResponsiveContainer, PieChart, Pie, Cell
+} from "recharts"
 
-const statsCards = [
-    {
-        label: "รายได้วันนี้",
-        value: "฿ 5,000",
-        icon: DollarSign,
-        color: "from-[#E0F7FA] to-[#B2EBF2]",
-        iconColor: "text-[#06B6D4]",
-        change: "+12%",
-        changeUp: true,
-    },
-    {
-        label: "ออเดอร์ทั้งหมด",
-        value: "6",
-        icon: ShoppingBag,
-        color: "from-[#FFF9C4] to-[#FFF176]",
-        iconColor: "text-[#F9A825]",
-        change: "+3",
-        changeUp: true,
-    },
-    {
-        label: "ออเดอร์รอดำเนินการ",
-        value: "3",
-        icon: Clock,
-        color: "from-[#F3E5F5] to-[#E1BEE7]",
-        iconColor: "text-[#AB47BC]",
-        change: "รอจัดการ",
-        changeUp: false,
-    },
-]
 
-const recentOrders = [
-    {
-        id: "ORD-7721",
-        date: "14 ก.พ. 2569",
-        customer: "คุณวิภาวี ใจดี",
-        fileName: "เอกสารประกอบการเรียน.pdf",
-        price: "42.5",
-        status: "ตรวจสอบสลิป",
-        statusColor: "bg-[#FFF9C4] text-[#F9A825]",
-        progress: 10,
-        progressBarColor: "bg-[#06B6D4]",
-    },
-    {
-        id: "ORD-7720",
-        date: "14 ก.พ. 2569",
-        customer: "สมชาย รักเรียน",
-        fileName: "รายงานประจำปี_V2.docx",
-        price: "120",
-        status: "กำลังดำเนินการ",
-        statusColor: "bg-[#E0F7FA] text-[#06B6D4]",
-        progress: 30,
-        progressBarColor: "bg-[#06B6D4]",
-    },
-    {
-        id: "ORD-7719",
-        date: "14 ก.พ. 2569",
-        customer: "กิตติศักดิ์ พิมพ์เก่ง",
-        fileName: "Poster_A3_Event.ai",
-        price: "350",
-        status: "กำลังดำเนินการ",
-        statusColor: "bg-[#E0F7FA] text-[#06B6D4]",
-        progress: 50,
-        progressBarColor: "bg-[#06B6D4]",
-    },
-    {
-        id: "ORD-7718",
-        date: "13 ก.พ. 2569",
-        customer: "รุ่งนภา แจ่มใส",
-        fileName: "รูปถ่ายครอบครัว.jpg",
-        price: "85",
-        status: "เสร็จสิ้นพร้อมรับ",
-        statusColor: "bg-[#E8F5E9] text-[#4CAF50]",
-        progress: 80,
-        progressBarColor: "bg-[#06B6D4]",
-    },
-    {
-        id: "ORD-7717",
-        date: "13 ก.พ. 2569",
-        customer: "ดนัย สุขุม",
-        fileName: "แผ่นพับแนะนำร้าน.pdf",
-        price: "240",
-        status: "รับแล้ว",
-        statusColor: "bg-[#F5F5F5] text-[#9E9E9E]",
-        progress: 100,
-        progressBarColor: "bg-[#06B6D4]",
-    },
-    {
-        id: "ORD-7716",
-        date: "12 ก.พ. 2569",
-        customer: "มานะ ขยัน",
-        fileName: "วิทยานิพนธ์_final.pdf",
-        price: "1,250",
-        status: "ยกเลิก",
-        statusColor: "bg-[#FCE4EC] text-[#E91E63]",
-        progress: 0,
-        progressBarColor: "bg-gray-200",
-    },
-]
+
+
 
 const getStatusInfo = (status: string) => {
     switch (status) {
@@ -135,82 +45,10 @@ const getStatusInfo = (status: string) => {
     }
 }
 
-const topServices = [
-    { name: "ถ่ายเอกสารขาวดำ", count: 120, percentage: 85, color: "bg-[#06B6D4]" },
-    { name: "ถ่ายเอกสารสี", count: 98, percentage: 70, color: "bg-[#38bdf8]" },
-    { name: "เข้าเล่มสันห่วง", count: 65, percentage: 48, color: "bg-[#7dd3fc]" },
-    { name: "โปสเตอร์", count: 42, percentage: 30, color: "bg-[#a5f3fc]" },
-    { name: "นามบัตร", count: 35, percentage: 25, color: "bg-[#cffafe]" },
-]
 
-function RevenueChart({ data, labels }: { data: number[], labels: string[] }) {
-    if (!data || data.length === 0) return null;
-    const max = Math.max(...data, 100)
-    const height = 140
-    const width = 500
 
-    const points = data.map((val, i) => ({
-        x: (i / (data.length - 1)) * width,
-        y: height - (val / max) * height,
-    }))
 
-    const pathD = points
-        .map((p, i) => (i === 0 ? `M ${p.x} ${p.y}` : `L ${p.x} ${p.y}`))
-        .join(" ")
 
-    const areaD = `${pathD} L ${width} ${height} L 0 ${height} Z`
-
-    return (
-        <div className="relative w-full h-full">
-            <svg viewBox={`-5 -10 ${width + 10} ${height + 30}`} className="w-full h-full" preserveAspectRatio="none">
-                <defs>
-                    <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#06B6D4" stopOpacity="0.3" />
-                        <stop offset="100%" stopColor="#06B6D4" stopOpacity="0.02" />
-                    </linearGradient>
-                </defs>
-                {[0, 1, 2, 3].map((i) => (
-                    <line
-                        key={i}
-                        x1={-5}
-                        y1={(height / 3) * i}
-                        x2={width + 5}
-                        y2={(height / 3) * i}
-                        stroke="#e5e7eb"
-                        strokeWidth="0.3"
-                        strokeDasharray="2,2"
-                    />
-                ))}
-                <path d={areaD} fill="url(#areaGradient)" />
-                <path d={pathD} fill="none" stroke="#06B6D4" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                {points.map((p, i) => (
-                    <circle
-                        key={i}
-                        cx={p.x}
-                        cy={p.y}
-                        r="2.5"
-                        fill="white"
-                        stroke="#06B6D4"
-                        strokeWidth="1.5"
-                    />
-                ))}
-                {points.map((p, i) => (
-                    <text
-                        key={`label-${i}`}
-                        x={p.x}
-                        y={height + 20}
-                        textAnchor="middle"
-                        fontSize="12"
-                        fill="#9ca3af"
-                        className="font-medium"
-                    >
-                        {labels[i]}
-                    </text>
-                ))}
-            </svg>
-        </div>
-    )
-}
 const statusSequence = [
     { label: "ตรวจสอบสลิป", color: "bg-[#FFF9C4] text-[#F9A825]", progress: 10 },
     { label: "กำลังดำเนินการ", color: "bg-[#E0F7FA] text-[#06B6D4]", progress: 40 },
@@ -222,10 +60,11 @@ const SHOP_ID = "b9652bb2-cba5-4440-9d89-0f93f598cb67"
 
 export default function ShopDashboard() {
     const [userName, setUserName] = useState("ร้านค้า")
-    const [filterPeriod, setFilterPeriod] = useState("Last 7 Days")
     const [isShopOpen, setIsShopOpen] = useState(true)
     const [isTogglingShop, setIsTogglingShop] = useState(false)
     const [orders, setOrders] = useState<any[]>([])
+    const [currentPage, setCurrentPage] = useState(1)
+    const ORDERS_PER_PAGE = 5
 
     // Modal states
     const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false)
@@ -433,46 +272,8 @@ export default function ShopDashboard() {
     }
 
     const todayOrders = orders.filter(o => o.date === new Date().toLocaleDateString("th-TH", { year: "numeric", month: "short", day: "numeric" }));
-    const todayRevenue = todayOrders.reduce((sum, order) => sum + parseFloat(order.price), 0);
+    const todayRevenue = todayOrders.filter(o => o.status === "รับแล้ว").reduce((sum, order) => sum + parseFloat(order.price), 0);
     const pendingOrdersCount = orders.filter(o => o.status === "กำลังดำเนินการ" || o.status === "รอตรวจสอบสลิป").length;
-
-    // 📊 Report Calculations
-    // 1. Top Services Data
-    const serviceCounts: Record<string, number> = {};
-    orders.forEach(order => {
-        order.items?.forEach((item: any) => {
-            const type = item.document_type || "อื่นๆ";
-            serviceCounts[type] = (serviceCounts[type] || 0) + 1;
-        });
-    });
-
-    const topServiceData = Object.entries(serviceCounts)
-        .map(([name, count]) => ({
-            name,
-            count,
-            percentage: Math.min(100, (count / Math.max(orders.length, 1)) * 100),
-            color: name.includes("สี") ? "bg-[#06B6D4]" : "bg-[#38bdf8]"
-        }))
-        .sort((a, b) => b.count - a.count)
-        .slice(0, 5);
-
-    // 2. Revenue Chart Data (Last 7 Days)
-    const dayNames = ["อา.", "จ.", "อ.", "พ.", "พฤ.", "ศ.", "ส."];
-    const last7Days = [...Array(7)].map((_, i) => {
-        const d = new Date();
-        d.setDate(d.getDate() - (6 - i));
-        return {
-            fullDate: d.toLocaleDateString("th-TH", { year: "numeric", month: "short", day: "numeric" }),
-            label: dayNames[d.getDay()]
-        };
-    });
-
-    const revenueLabels = last7Days.map(d => d.label);
-    const revenueValueData = last7Days.map(day => {
-        return orders
-            .filter(o => o.date === day.fullDate && o.status !== "ยกเลิก")
-            .reduce((sum, o) => sum + parseFloat(o.price), 0);
-    });
 
     const dynamicStatsCards = [
         {
@@ -481,7 +282,7 @@ export default function ShopDashboard() {
             icon: DollarSign,
             color: "from-[#E0F7FA] to-[#B2EBF2]",
             iconColor: "text-[#06B6D4]",
-            change: "อัปเดตล่าสุด",
+            change: "เฉพาะออเดอร์ที่รับแล้ว",
             changeUp: true,
         },
         {
@@ -571,7 +372,6 @@ export default function ShopDashboard() {
                                 <span className={`text-xs font-medium ${card.changeUp ? "text-emerald-500" : "text-amber-500"}`}>
                                     {card.change}
                                 </span>
-                                {card.changeUp && <span className="text-xs text-[#90a4ae]">จากเมื่อวาน</span>}
                             </div>
                         </div>
                     )
@@ -582,7 +382,7 @@ export default function ShopDashboard() {
             <div className="bg-white rounded-2xl border border-[#eaf6f8] shadow-sm mb-8 overflow-hidden">
                 <div className="flex items-center justify-between px-6 py-5 border-b border-[#f0f4f5]">
                     <div>
-                        <h2 className="text-xl font-bold text-[#455a64]">Orders Management</h2>
+                        <h2 className="text-xl font-bold text-[#455a64]">รายการคำสั่งซื้อ</h2>
                         <p className="text-xs text-[#90a4ae] mt-1">จัดการออเดอร์ล่าสุดของร้านค้า</p>
                     </div>
                     <Link href="/shop/orders">
@@ -605,7 +405,7 @@ export default function ShopDashboard() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-[#f0f4f5]">
-                            {orders.map((order) => (
+                            {orders.slice((currentPage - 1) * ORDERS_PER_PAGE, currentPage * ORDERS_PER_PAGE).map((order) => (
                                 <tr
                                     key={order.id}
                                     className="hover:bg-[#fafeff] transition-colors duration-150 group"
@@ -914,11 +714,21 @@ export default function ShopDashboard() {
                                     <Receipt size={20} className="text-amber-500" />
                                     หลักฐานการโอนเงิน
                                 </h3>
-                                <div className="aspect-[3/4] rounded-2xl rounded-2xl bg-gray-100 border border-gray-200 flex flex-col items-center justify-center gap-3 overflow-hidden group">
-                                    <div className="w-16 h-16 bg-white rounded-full shadow-sm flex items-center justify-center text-gray-300 group-hover:scale-110 transition-transform">
-                                        <Receipt size={32} />
-                                    </div>
-                                    <p className="text-sm font-medium text-gray-400 italic">รูปภาพสลิปโอนเงิน</p>
+                                <div className="aspect-[3/4] rounded-2xl bg-gray-100 border border-gray-200 flex flex-col items-center justify-center gap-3 overflow-hidden group">
+                                    {selectedOrder.payment_slip_url ? (
+                                        <img
+                                            src={selectedOrder.payment_slip_url}
+                                            alt="สลิปการโอนเงิน"
+                                            className="w-full h-full object-contain"
+                                        />
+                                    ) : (
+                                        <>
+                                            <div className="w-16 h-16 bg-white rounded-full shadow-sm flex items-center justify-center text-gray-300 group-hover:scale-110 transition-transform">
+                                                <Receipt size={32} />
+                                            </div>
+                                            <p className="text-sm font-medium text-gray-400 italic">ยังไม่มีสลิปการโอนเงิน</p>
+                                        </>
+                                    )}
                                 </div>
                                 <div className="mt-6 flex gap-3">
                                     <button
@@ -1033,63 +843,29 @@ export default function ShopDashboard() {
                 {/* Footer and Pagination */}
                 <div className="px-6 py-5 border-t border-[#f0f4f5] flex items-center justify-between">
                     <p className="text-xs text-[#90a4ae]">
-                        การเปลี่ยนสถานะจะแจ้งเตือนลูกค้าโดยอัตโนมัติผ่านทางหน้าเว็บ
+                        หน้า {currentPage} จาก {Math.max(1, Math.ceil(orders.length / ORDERS_PER_PAGE))} ({orders.length} รายการ)
                     </p>
                     <div className="flex items-center gap-2">
-                        <button className="px-4 py-2 bg-[#f8fafc] border border-[#e5e7eb] rounded-xl text-xs font-medium text-[#90a4ae] hover:bg-[#06B6D4] hover:text-white hover:border-[#06B6D4] transition-all disabled:opacity-50">
+                        <button
+                            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                            disabled={currentPage <= 1}
+                            className="px-4 py-2 bg-[#f8fafc] border border-[#e5e7eb] rounded-xl text-xs font-medium text-[#90a4ae] hover:bg-[#06B6D4] hover:text-white hover:border-[#06B6D4] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-[#f8fafc] disabled:hover:text-[#90a4ae] disabled:hover:border-[#e5e7eb]"
+                        >
                             ก่อนหน้า
                         </button>
-                        <button className="px-4 py-2 bg-[#f8fafc] border border-[#e5e7eb] rounded-xl text-xs font-medium text-[#455a64] hover:bg-[#06B6D4] hover:text-white hover:border-[#06B6D4] transition-all">
+                        <button
+                            onClick={() => setCurrentPage(p => Math.min(Math.ceil(orders.length / ORDERS_PER_PAGE), p + 1))}
+                            disabled={currentPage >= Math.ceil(orders.length / ORDERS_PER_PAGE)}
+                            className="px-4 py-2 bg-[#f8fafc] border border-[#e5e7eb] rounded-xl text-xs font-medium text-[#455a64] hover:bg-[#06B6D4] hover:text-white hover:border-[#06B6D4] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-[#f8fafc] disabled:hover:text-[#455a64] disabled:hover:border-[#e5e7eb]"
+                        >
                             ถัดไป
                         </button>
                     </div>
                 </div>
             </div>
 
-            {/* ─── Charts Section ─── */}
-            <div className="grid grid-cols-2 gap-6">
-                <div className="bg-white rounded-2xl border border-[#eaf6f8] shadow-sm p-6">
-                    <div className="flex items-center justify-between mb-6">
-                        <h3 className="text-base font-semibold text-[#455a64]">Revenue Trends</h3>
-                        <button className="flex items-center gap-1.5 px-3 py-1.5 bg-[#f5fbfe] border border-[#e5e7eb] rounded-lg text-xs text-[#78909c] hover:border-[#06B6D4] transition-all">
-                            {filterPeriod}
-                            <ChevronDown size={14} />
-                        </button>
-                    </div>
-                    <div className="h-[200px]">
-                        <RevenueChart data={revenueValueData} labels={revenueLabels} />
-                    </div>
-                </div>
-                <div className="bg-white rounded-2xl border border-[#eaf6f8] shadow-sm p-6">
-                    <div className="flex items-center justify-between mb-6">
-                        <h3 className="text-base font-semibold text-[#455a64]">Top Selling Services</h3>
-                        <button className="text-xs text-[#06B6D4] hover:text-[#0891b2] font-medium transition-colors">
-                            ดูรายละเอียด →
-                        </button>
-                    </div>
-                    <div className="space-y-4">
-                        {topServiceData.length > 0 ? topServiceData.map((service) => (
-                            <div key={service.name} className="group">
-                                <div className="flex items-center justify-between mb-1.5">
-                                    <span className="text-sm text-[#455a64] font-medium">{service.name}</span>
-                                    <span className="text-xs text-[#90a4ae]">{service.count} รายการ</span>
-                                </div>
-                                <div className="h-2 w-full bg-gray-50 rounded-full overflow-hidden border border-gray-100">
-                                    <div
-                                        className={`h-full ${service.color} rounded-full transition-all duration-700 ease-out group-hover:opacity-80`}
-                                        style={{ width: `${service.percentage}%` }}
-                                    />
-                                </div>
-                            </div>
-                        )) : (
-                            <div className="flex flex-col items-center justify-center h-full text-[#90a4ae] py-10 opacity-50">
-                                <ShoppingBag size={32} className="mb-2" />
-                                <p className="text-xs">ยังไม่มีข้อมูลการขาย</p>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            </div>
+            {/* ─── Charts Section (recharts) ─── */}
+            <DashboardCharts orders={orders} />
 
             {/* File Preview Modal */}
             {previewFile && (
@@ -1149,4 +925,102 @@ export default function ShopDashboard() {
             )}
         </div >
     )
+}
+
+// ─── Dashboard Charts Component ───────────────────────────────────────────────
+const PIE_COLORS = ["#06B6D4", "#f472b6", "#fbbf24", "#34d399", "#a78bfa"];
+
+function DashboardCharts({ orders }: { orders: any[] }) {
+    // Daily revenue data (last 7 days, excluding cancelled)
+    const dailyData = useMemo(() => {
+        const days = [...Array(7)].map((_, i) => {
+            const d = new Date();
+            d.setDate(d.getDate() - (6 - i));
+            return {
+                key: d.toLocaleDateString("th-TH", { year: "numeric", month: "short", day: "numeric" }),
+                label: d.toLocaleDateString("th-TH", { month: "short", day: "numeric" }),
+            };
+        });
+
+        return days.map(day => {
+            const dayOrders = orders.filter(o => o.date === day.key && o.status !== "ยกเลิก");
+            const revenue = dayOrders.reduce((sum: number, o: any) => sum + parseFloat(o.price || "0"), 0);
+            return { label: day.label, revenue };
+        });
+    }, [orders]);
+
+    // Status pie data
+    const statusData = useMemo(() => {
+        const map: Record<string, number> = {};
+        orders.forEach(o => {
+            map[o.status] = (map[o.status] || 0) + 1;
+        });
+        return Object.entries(map).map(([name, value]) => ({ name, value }));
+    }, [orders]);
+
+    const fmt = (n: number) => n.toLocaleString("th-TH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+    return (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Revenue Bar Chart */}
+            <div className="lg:col-span-2 bg-white rounded-2xl border border-[#eaf6f8] shadow-sm p-6">
+                <h3 className="text-[#455a64] font-bold text-[15px] flex items-center gap-2 mb-6">
+                    <TrendingUp size={18} className="text-[#06B6D4]" />
+                    รายได้รายวัน (บาท)
+                </h3>
+                {dailyData.every(d => d.revenue === 0) ? (
+                    <div className="flex flex-col items-center justify-center h-[260px] text-gray-300">
+                        <ShoppingCart size={36} strokeWidth={1} />
+                        <p className="text-sm mt-2">ยังไม่มีข้อมูลรายได้</p>
+                    </div>
+                ) : (
+                    <ResponsiveContainer width="100%" height={260}>
+                        <BarChart data={dailyData} barSize={20}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                            <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
+                            <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} tickFormatter={v => `฿${v.toLocaleString()}`} />
+                            <Tooltip formatter={(v: any) => [`฿${fmt(v)}`, "รายได้"]} contentStyle={{ borderRadius: 12, border: "1px solid #e2e8f0", fontSize: 12 }} />
+                            <Bar dataKey="revenue" fill="#06B6D4" radius={[6, 6, 0, 0]} name="รายได้ (บาท)" />
+                        </BarChart>
+                    </ResponsiveContainer>
+                )}
+            </div>
+
+            {/* Status Pie Chart */}
+            <div className="bg-white rounded-2xl border border-[#eaf6f8] shadow-sm p-6 flex flex-col">
+                <h3 className="text-[#455a64] font-bold text-[15px] flex items-center gap-2 mb-4">
+                    <ShoppingCart size={18} className="text-pink-400" />
+                    สัดส่วนสถานะ
+                </h3>
+                {statusData.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center flex-1 text-gray-300">
+                        <ShoppingCart size={36} strokeWidth={1} />
+                        <p className="text-sm mt-2">ยังไม่มีข้อมูล</p>
+                    </div>
+                ) : (
+                    <>
+                        <ResponsiveContainer width="100%" height={200}>
+                            <PieChart>
+                                <Pie data={statusData} cx="50%" cy="50%" innerRadius={55} outerRadius={80} paddingAngle={3} dataKey="value">
+                                    {statusData.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
+                                </Pie>
+                                <Tooltip formatter={(v: any) => v} contentStyle={{ borderRadius: 12, fontSize: 12 }} />
+                            </PieChart>
+                        </ResponsiveContainer>
+                        <div className="mt-2 space-y-1.5">
+                            {statusData.map((d, i) => (
+                                <div key={d.name} className="flex items-center justify-between text-sm">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-2.5 h-2.5 rounded-full" style={{ background: PIE_COLORS[i % PIE_COLORS.length] }} />
+                                        <span className="text-gray-600 text-[12px]">{d.name}</span>
+                                    </div>
+                                    <span className="font-bold text-[#1e293b] text-[12px]">{d.value}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </>
+                )}
+            </div>
+        </div>
+    );
 }

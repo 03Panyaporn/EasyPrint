@@ -3,7 +3,7 @@
 import { useCart } from "@/context/CartContext";
 import type { CartItem } from "@/context/CartContext";
 import { useRouter } from "next/navigation";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 
 // ─── File Preview Modal ───────────────────────────────────────────────────────
@@ -117,7 +117,7 @@ function FilePreviewModal({ item, onClose }: { item: CartItem; onClose: () => vo
 
 // ─── Main Checkout Page ───────────────────────────────────────────────────────
 export default function CheckoutPage() {
-    const { selectedItems, clearCart, clearSelection } = useCart();
+    const { selectedItems, removeSelectedItems } = useCart();
     const router = useRouter();
 
     const [proofFile, setProofFile] = useState<File | null>(null);
@@ -128,9 +128,55 @@ export default function CheckoutPage() {
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [shopPayment, setShopPayment] = useState<{
+        bankName: string;
+        accountName: string;
+        accountNumber: string;
+        promptPayQr: string | null;
+    } | null>(null);
 
     const grandTotal = selectedItems.reduce((sum, i) => sum + i.totalPrice, 0);
-    const isReady = proofFile !== null && wantReceipt !== null && agreedTerms && !isSubmitting;
+    const isFormComplete = proofFile !== null && wantReceipt !== null && agreedTerms;
+    const isReady = isFormComplete && !isSubmitting;
+
+    useEffect(() => {
+        const fetchShopPayment = async () => {
+            try {
+                const { data, error } = await supabase
+                    .from('shops')
+                    .select('bank_name, account_name, account_number, promptpay_qr_url')
+                    .eq('id', 'b9652bb2-cba5-4440-9d89-0f93f598cb67')
+                    .single()
+
+                if (error) throw error
+
+                if (data) {
+                    setShopPayment({
+                        bankName: data.bank_name || "",
+                        accountName: data.account_name || "",
+                        accountNumber: data.account_number || "",
+                        promptPayQr: data.promptpay_qr_url || null
+                    })
+                }
+            } catch (error) {
+                console.error("Error fetching shop payment info:", error)
+            }
+        }
+        fetchShopPayment()
+    }, [])
+
+    const formatBankName = (val?: string) => {
+        if (!val) return 'สแกนเพื่อชำระเงิน'
+        const banks: Record<string, string> = {
+            'kbank': 'ธนาคารกสิกรไทย',
+            'scb': 'ธนาคารไทยพาณิชย์',
+            'ktb': 'ธนาคารกรุงไทย',
+            'bbl': 'ธนาคารกรุงเทพ',
+            'bay': 'ธนาคารกรุงศรีอยุธยา',
+            'ttb': 'ทีเอ็มบีธนชาต'
+        }
+        return banks[val] || val
+    }
 
     const handleProofChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -230,9 +276,8 @@ export default function CheckoutPage() {
 
             if (itemsError) throw itemsError;
 
-            // If everything is successful, clear cart and redirect
-            clearSelection();
-            clearCart();
+            // If everything is successful, remove only the checked-out items and redirect
+            removeSelectedItems();
             router.push("/customer/tracking");
 
         } catch (error: any) {
@@ -377,40 +422,25 @@ export default function CheckoutPage() {
                             <h2 className="text-sm font-bold text-gray-700 mb-4">การชำระเงิน</h2>
                             <div className="flex gap-6 items-start">
 
-                                {/* QR Code */}
-                                <div className="flex flex-col items-center gap-2 shrink-0">
-                                    <div className="border-2 border-[#06B6D4]/30 rounded-2xl p-3 bg-white shadow-sm">
-                                        <svg width="140" height="140" viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg">
-                                            <rect width="160" height="160" fill="white" />
-                                            <rect x="10" y="10" width="50" height="50" rx="4" fill="none" stroke="#000" strokeWidth="6" />
-                                            <rect x="20" y="20" width="30" height="30" rx="2" fill="#000" />
-                                            <rect x="100" y="10" width="50" height="50" rx="4" fill="none" stroke="#000" strokeWidth="6" />
-                                            <rect x="110" y="20" width="30" height="30" rx="2" fill="#000" />
-                                            <rect x="10" y="100" width="50" height="50" rx="4" fill="none" stroke="#000" strokeWidth="6" />
-                                            <rect x="20" y="110" width="30" height="30" rx="2" fill="#000" />
-                                            <rect x="70" y="10" width="10" height="10" fill="#000" /><rect x="85" y="10" width="10" height="10" fill="#000" />
-                                            <rect x="70" y="25" width="10" height="10" fill="#000" /><rect x="70" y="40" width="10" height="10" fill="#000" />
-                                            <rect x="85" y="55" width="10" height="10" fill="#000" />
-                                            <rect x="10" y="70" width="10" height="10" fill="#000" /><rect x="25" y="70" width="10" height="10" fill="#000" />
-                                            <rect x="40" y="70" width="10" height="10" fill="#000" /><rect x="55" y="70" width="10" height="10" fill="#000" />
-                                            <rect x="70" y="70" width="10" height="10" fill="#000" /><rect x="85" y="70" width="10" height="10" fill="#000" />
-                                            <rect x="100" y="70" width="10" height="10" fill="#000" /><rect x="115" y="70" width="10" height="10" fill="#000" />
-                                            <rect x="130" y="70" width="10" height="10" fill="#000" /><rect x="145" y="70" width="10" height="10" fill="#000" />
-                                            <rect x="10" y="85" width="10" height="10" fill="#000" /><rect x="40" y="85" width="10" height="10" fill="#000" />
-                                            <rect x="70" y="85" width="10" height="10" fill="#000" /><rect x="100" y="85" width="10" height="10" fill="#000" />
-                                            <rect x="130" y="85" width="10" height="10" fill="#000" /><rect x="145" y="85" width="10" height="10" fill="#000" />
-                                            <rect x="70" y="100" width="10" height="10" fill="#000" /><rect x="85" y="100" width="10" height="10" fill="#000" />
-                                            <rect x="115" y="100" width="10" height="10" fill="#000" /><rect x="145" y="100" width="10" height="10" fill="#000" />
-                                            <rect x="70" y="115" width="10" height="10" fill="#000" /><rect x="100" y="115" width="10" height="10" fill="#000" />
-                                            <rect x="130" y="115" width="10" height="10" fill="#000" />
-                                            <rect x="70" y="130" width="10" height="10" fill="#000" /><rect x="85" y="130" width="10" height="10" fill="#000" />
-                                            <rect x="115" y="130" width="10" height="10" fill="#000" /><rect x="145" y="130" width="10" height="10" fill="#000" />
-                                            <rect x="70" y="145" width="10" height="10" fill="#000" /><rect x="100" y="145" width="10" height="10" fill="#000" />
-                                            <rect x="130" y="145" width="10" height="10" fill="#000" />
-                                        </svg>
+                                {/* QR Code & Bank Info */}
+                                <div className="flex flex-col items-center gap-3 shrink-0">
+                                    <div className="border-2 border-[#06B6D4]/30 rounded-2xl p-3 bg-white shadow-sm flex items-center justify-center min-w-[140px] min-h-[140px] relative overflow-hidden">
+                                        {shopPayment?.promptPayQr ? (
+                                            <img src={shopPayment.promptPayQr} alt="QR Code Shop" className="absolute inset-0 w-full h-full object-cover p-2" />
+                                        ) : (
+                                            <div className="text-center text-gray-400 p-4">
+                                                <svg className="w-10 h-10 mx-auto mb-2 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+                                                </svg>
+                                                <p className="text-[10px]">โปรดสอบถามร้าน</p>
+                                            </div>
+                                        )}
                                     </div>
-                                    <p className="text-xs font-semibold text-gray-600">สแกน PromptPay</p>
-                                    <p className="text-xs text-gray-400">099-XXX-XXXX</p>
+                                    <div className="text-center">
+                                        <p className="text-[13px] font-bold text-[#06B6D4] mb-0.5">{formatBankName(shopPayment?.bankName)}</p>
+                                        <p className="text-xs font-semibold text-gray-700">{shopPayment?.accountName || 'รอการตั้งค่าจากร้านค้า'}</p>
+                                        <p className="text-xs text-gray-500 mt-0.5">{shopPayment?.accountNumber || '-'}</p>
+                                    </div>
                                 </div>
 
                                 {/* Price summary */}
@@ -514,7 +544,7 @@ export default function CheckoutPage() {
                             </div>
 
                             {/* Hint */}
-                            {!isReady && (
+                            {!isFormComplete && (
                                 <div className="flex items-center gap-2 px-3 py-2.5 bg-amber-50 border border-amber-200 rounded-xl">
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
                                         <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />

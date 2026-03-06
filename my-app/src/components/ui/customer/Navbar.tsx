@@ -54,14 +54,13 @@ export default function Navbar() {
     return (
         <div className="bg-white">
             {/* Top status bar */}
-            <div className={`bg-gradient-to-r ${isShopOpen ? 'from-[#E0F3F7] to-[#F0FAFB]' : 'from-rose-50 to-rose-100'} py-1.5 px-6 flex items-center gap-2.5 border-b ${isShopOpen ? 'border-[#d1e9ed]' : 'border-rose-200'}`}>
-                <div className={`w-8 h-4 rounded-full flex items-center px-0.5 transition-all duration-500 shadow-inner ${isShopOpen ? 'bg-[#06B6D4]' : 'bg-rose-400'}`}>
-                    <div className={`w-3 h-3 bg-white rounded-full shadow-sm transition-transform duration-500 ${isShopOpen ? 'translate-x-[16px]' : 'translate-x-0'}`} />
-                </div>
-                <span className={`text-sm ${isShopOpen ? 'text-[#7eb6c5]' : 'text-rose-500'}`}>
-                    สถานะร้านค้า : <span className={`font-bold ${isShopOpen ? 'text-[#06B6D4]' : 'text-rose-600'}`}>
-                        {isShopOpen ? 'เปิดบริการ' : 'ปิดบริการชั่วคราว'}
-                    </span>
+            <div className="py-1.5 px-8 flex items-center gap-2 border-b border-gray-100 bg-gray-50/50">
+                <span className="relative flex h-3 w-3">
+                    {isShopOpen && <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />}
+                    <span className={`relative inline-flex rounded-full h-3 w-3 ${isShopOpen ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+                </span>
+                <span className={`text-sm font-medium ${isShopOpen ? 'text-emerald-600' : 'text-rose-500'}`}>
+                    {isShopOpen ? 'ร้านค้าเปิดบริการ' : 'ร้านค้าปิดบริการชั่วคราว'}
                 </span>
             </div>
 

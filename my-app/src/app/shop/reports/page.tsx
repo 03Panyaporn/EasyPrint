@@ -154,23 +154,34 @@ export default function ReportsPage() {
         ];
 
         // Sheet 2: Orders table
-        const headers = ["รหัสคำสั่งซื้อ", "วันที่", "ไฟล์", "ราคา (บาท)", "สถานะ"];
-        const rows = tableRows.map(r => [r.id, r.date, r.file, r.price, r.status]);
-        const completedRevenue = tableRows
-            .filter(r => r.status === STATUS_COMPLETE)
-            .reduce((s, r) => s + r.price, 0);
-        const totalRow = ["รวมรายได้ (เสร็จสิ้น)", "", "", completedRevenue, ""];
+        const headers = ["รหัสออเดอร์", "ประเภท", "ราคา (บาท)", "หมายเหตุ"];
+        const rows = tableRows.map(r => [r.id, r.file, r.price, r.status]);
+        const totalValue = tableRows.reduce((s, r) => s + r.price, 0);
+        const totalRow = ["สรุปยอดเงิน", "", totalValue, ""];
 
         // Build workbook
         const wb = utils.book_new();
 
+        // Sheet 0: Explanation
+        const explainData = [
+            ["คำแนะนำการใช้งานไฟล์รายงาน"],
+            [""],
+            ["ไฟล์นี้ประกอบด้วย 3 แผ่นงาน (Tabs) ดังนี้:"],
+            ["1. รายการคำสั่งซื้อ - แสดงรายละเอียดของทุกคำสั่งซื้อในช่วงเวลาที่เลือก พร้อมสรุปยอดเงินรวมบรรทัดสุดท้าย"],
+            ["2. สรุป - แสดงภาพรวมรายได้และจำนวนคำสั่งซื้อทั้งหมด"],
+            ["3. รายวัน - แสดงข้อมูลสรุปยอดขายและจำนวนคำสั่งซื้อแยกตามแต่ละวัน"]
+        ];
+        const wsExplain = utils.aoa_to_sheet(explainData);
+        wsExplain["!cols"] = [{ wch: 80 }];
+        utils.book_append_sheet(wb, wsExplain, "คำอธิบาย");
+
+        const wsOrders = utils.aoa_to_sheet([headers, ...rows, [], totalRow]);
+        wsOrders["!cols"] = [{ wch: 28 }, { wch: 30 }, { wch: 15 }, { wch: 20 }];
+        utils.book_append_sheet(wb, wsOrders, "รายการคำสั่งซื้อ");
+
         const wsSummary = utils.aoa_to_sheet(summaryData);
         wsSummary["!cols"] = [{ wch: 36 }, { wch: 20 }];
         utils.book_append_sheet(wb, wsSummary, "สรุป");
-
-        const wsOrders = utils.aoa_to_sheet([headers, ...rows, [], totalRow]);
-        wsOrders["!cols"] = [{ wch: 28 }, { wch: 18 }, { wch: 30 }, { wch: 14 }, { wch: 20 }];
-        utils.book_append_sheet(wb, wsOrders, "รายการ");
 
         const dailyHeaders = ["วันที่", "รายได้ (บาท)", "จำนวนคำสั่งซื้อ"];
         const dailyRows = dailyData.map(d => [d.date, d.revenue, d.orders]);
@@ -219,22 +230,34 @@ export default function ReportsPage() {
 
                         <div className="flex items-center gap-2 ml-auto">
                             <span className="text-xs text-gray-500 font-medium">ตั้งแต่</span>
-                            <input
-                                type="date"
-                                value={startDate}
-                                max={endDate}
-                                onChange={e => { setStartDate(e.target.value); setActivePreset(null); }}
-                                className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#06B6D4]/30"
-                            />
+                            <div className="relative">
+                                <div className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm text-gray-700 bg-white flex items-center justify-between gap-3 min-w-[130px]">
+                                    <span>{thDate(startDate + "T00:00:00")}</span>
+                                    <Calendar size={14} className="text-[#06B6D4]" />
+                                </div>
+                                <input
+                                    type="date"
+                                    value={startDate}
+                                    max={endDate}
+                                    onChange={e => { setStartDate(e.target.value); setActivePreset(null); }}
+                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:opacity-0 z-10"
+                                />
+                            </div>
                             <span className="text-xs text-gray-500 font-medium">ถึง</span>
-                            <input
-                                type="date"
-                                value={endDate}
-                                min={startDate}
-                                max={today}
-                                onChange={e => { setEndDate(e.target.value); setActivePreset(null); }}
-                                className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#06B6D4]/30"
-                            />
+                            <div className="relative">
+                                <div className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm text-gray-700 bg-white flex items-center justify-between gap-3 min-w-[130px]">
+                                    <span>{thDate(endDate + "T00:00:00")}</span>
+                                    <Calendar size={14} className="text-[#06B6D4]" />
+                                </div>
+                                <input
+                                    type="date"
+                                    value={endDate}
+                                    min={startDate}
+                                    max={today}
+                                    onChange={e => { setEndDate(e.target.value); setActivePreset(null); }}
+                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:opacity-0 z-10"
+                                />
+                            </div>
                             <button
                                 onClick={exportExcel}
                                 className="bg-[#06B6D4] hover:bg-[#0891b2] text-white px-4 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 transition-all shadow-sm"

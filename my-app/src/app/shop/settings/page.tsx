@@ -3,6 +3,9 @@
 import { useState } from "react"
 import { Search, Bell, Lock, AlertCircle, Save, CreditCard, UploadCloud, User, LogOut } from "lucide-react"
 import MerchantProfile from "@/components/ui/shop/MerchantProfile"
+import { useState, useEffect, useRef } from "react"
+import { Search, Bell, Lock, AlertCircle, Save, CreditCard, UploadCloud, User, Loader2, Check, XCircle, X } from "lucide-react"
+import { supabase } from "@/lib/supabase"
 
 export default function SettingsPage() {
     const [activeTab, setActiveTab] = useState<"payment" | "notifications" | "security">("payment")
@@ -28,6 +31,194 @@ export default function SettingsPage() {
         accountNumber: "",
         promptPayQr: null as string | null
     })
+
+    const [qrFile, setQrFile] = useState<File | null>(null)
+    const [qrPreview, setQrPreview] = useState<string | null>(null)
+    const [isSavingPayment, setIsSavingPayment] = useState(false)
+    const [isSavingNotifications, setIsSavingNotifications] = useState(false)
+    const [isChangingPassword, setIsChangingPassword] = useState(false)
+    const [showSuccess, setShowSuccess] = useState(false)
+    const [successMessage, setSuccessMessage] = useState("บันทึกข้อมูลเรียบร้อยแล้ว")
+    const [alertModal, setAlertModal] = useState<{ type: 'error' | 'warning'; title: string; message: string } | null>(null)
+    const qrInputRef = useRef<HTMLInputElement>(null)
+
+    useEffect(() => {
+        const fetchPaymentSettings = async () => {
+            try {
+                const { data, error } = await supabase
+                    .from('shops')
+                    .select('bank_name, account_name, account_number, promptpay_qr_url, notify_new_orders, notify_payments_received, notify_new_messages, notify_order_cancellations, notify_email_notifications')
+                    .eq('id', 'b9652bb2-cba5-4440-9d89-0f93f598cb67')
+                    .single()
+
+                if (error) throw error
+
+                if (data) {
+                    setPaymentSettings({
+                        bankName: data.bank_name || "",
+                        accountName: data.account_name || "",
+                        accountNumber: data.account_number || "",
+                        promptPayQr: data.promptpay_qr_url || null
+                    })
+                    if (data.promptpay_qr_url) {
+                        setQrPreview(data.promptpay_qr_url)
+                    }
+
+                    // Set notification settings
+                    setNotifSettings({
+                        newOrders: data.notify_new_orders ?? true,
+                        paymentsReceived: data.notify_payments_received ?? true,
+                        newMessages: data.notify_new_messages ?? true,
+                        orderCancellations: data.notify_order_cancellations ?? true,
+                        emailNotifications: data.notify_email_notifications ?? false,
+                    })
+                }
+            } catch (error) {
+                console.error("Error fetching payment settings:", error)
+            }
+        }
+        fetchPaymentSettings()
+    }, [])
+
+    const handleQrChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        if (!file) return
+        setQrFile(file)
+        setQrPreview(URL.createObjectURL(file))
+    }
+
+    const handleSavePayment = async () => {
+        setIsSavingPayment(true)
+        try {
+            let qrUrl = paymentSettings.promptPayQr
+
+            if (qrFile) {
+                const fileExt = qrFile.name.split('.').pop()
+                const fileName = `qr_${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`
+                const filePath = `receipts/${fileName}`
+
+                const { error: uploadError } = await supabase.storage
+                    .from('slips')
+                    .upload(filePath, qrFile)
+
+                if (uploadError) throw uploadError
+
+                const { data: { publicUrl } } = supabase.storage
+                    .from('slips')
+                    .getPublicUrl(filePath)
+
+                qrUrl = publicUrl
+            }
+
+            const { error } = await supabase
+                .from('shops')
+                .update({
+                    bank_name: paymentSettings.bankName,
+                    account_name: paymentSettings.accountName,
+                    account_number: paymentSettings.accountNumber,
+                    promptpay_qr_url: qrUrl
+                })
+                .eq('id', 'b9652bb2-cba5-4440-9d89-0f93f598cb67')
+
+            if (error) throw error
+
+            setPaymentSettings(prev => ({ ...prev, promptPayQr: qrUrl }))
+            setSuccessMessage("ข้อมูลการชำระเงินอัปเดตเรียบร้อยแล้ว")
+            setShowSuccess(true)
+            setTimeout(() => setShowSuccess(false), 1500)
+
+        } catch (error: any) {
+            console.error("Error saving payment settings:", error)
+            setAlertModal({ type: 'error', title: 'ไม่สามารถบันทึกได้', message: error.message })
+        } finally {
+            setIsSavingPayment(false)
+            setQrFile(null)
+        }
+    }
+
+    const handleSaveNotificationSettings = async () => {
+        setIsSavingNotifications(true)
+        try {
+            const { error } = await supabase
+                .from('shops')
+                .update({
+                    notify_new_orders: notifSettings.newOrders,
+                    notify_payments_received: notifSettings.paymentsReceived,
+                    notify_new_messages: notifSettings.newMessages,
+                    notify_order_cancellations: notifSettings.orderCancellations,
+                    notify_email_notifications: notifSettings.emailNotifications
+                })
+                .eq('id', 'b9652bb2-cba5-4440-9d89-0f93f598cb67')
+
+            if (error) throw error
+
+            setSuccessMessage("บันทึกการตั้งค่าการแจ้งเตือนเรียบร้อยแล้ว")
+            setShowSuccess(true)
+            setTimeout(() => setShowSuccess(false), 1500)
+        } catch (error: any) {
+            console.error("Error saving notification settings:", error)
+            setAlertModal({ type: 'error', title: 'ไม่สามารถบันทึกได้', message: error.message })
+        } finally {
+            setIsSavingNotifications(false)
+        }
+    }
+
+    const handleChangePassword = async () => {
+        if (!passwords.current || !passwords.new || !passwords.confirm) {
+            setAlertModal({ type: 'warning', title: 'ข้อมูลไม่ครบถ้วน', message: 'กรุณากรอกรหัสผ่านทุกช่องให้ครบถ้วน' })
+            return
+        }
+
+        if (passwords.new !== passwords.confirm) {
+            setAlertModal({ type: 'warning', title: 'รหัสผ่านไม่ตรงกัน', message: 'รหัสผ่านใหม่และการยืนยันรหัสผ่านไม่ตรงกัน กรุณาตรวจสอบอีกครั้ง' })
+            return
+        }
+
+        if (passwords.new.length < 8) {
+            setAlertModal({ type: 'warning', title: 'รหัสผ่านสั้นเกินไป', message: 'รหัสผ่านใหม่ต้องมีความยาวอย่างน้อย 8 ตัวอักษร' })
+            return
+        }
+
+        setIsChangingPassword(true)
+        try {
+            // Get current user email from sessionStorage (set by AuthContext on login)
+            const storedUser = sessionStorage.getItem('user')
+            if (!storedUser) throw new Error("ไม่พบข้อมูลผู้ใช้ กรุณาล็อกอินใหม่")
+            const userObj = JSON.parse(storedUser)
+            const email = userObj?.email
+            if (!email) throw new Error("ไม่พบอีเมลผู้ใช้ กรุณาล็อกอินใหม่")
+
+            // Call the backend to verify old password and update to new one
+            const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
+            const res = await fetch(`${API_URL}/api/auth/change-password`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({
+                    email,
+                    currentPassword: passwords.current,
+                    newPassword: passwords.new,
+                }),
+            })
+
+            const result = await res.json()
+            if (!res.ok) {
+                throw new Error(result.error || "ไม่สามารถเปลี่ยนรหัสผ่านได้")
+            }
+
+            // Success! Clear form and show success message
+            setPasswords({ current: "", new: "", confirm: "" })
+            setSuccessMessage("เปลี่ยนรหัสผ่านเรียบร้อยแล้ว")
+            setShowSuccess(true)
+            setTimeout(() => setShowSuccess(false), 2000)
+
+        } catch (error: any) {
+            console.error("Error changing password:", error)
+            setAlertModal({ type: 'error', title: 'ไม่สามารถเปลี่ยนรหัสผ่านได้', message: error.message })
+        } finally {
+            setIsChangingPassword(false)
+        }
+    }
 
     return (
         <div className="p-8 pb-16 bg-[#F8FAFC] min-h-screen">
@@ -89,17 +280,6 @@ export default function SettingsPage() {
 
                                     <div className="flex items-center justify-between pb-6 border-b border-gray-100">
                                         <div>
-                                            <p className="font-bold text-[#1e293b] text-sm">ได้รับการชำระเงิน</p>
-                                            <p className="text-[13px] text-gray-500 mt-0.5">รับการแจ้งเตือนหลังจากมีการชำระเงิน</p>
-                                        </div>
-                                        <Toggle
-                                            active={notifSettings.paymentsReceived}
-                                            onChange={() => setNotifSettings(prev => ({ ...prev, paymentsReceived: !prev.paymentsReceived }))}
-                                        />
-                                    </div>
-
-                                    <div className="flex items-center justify-between pb-6 border-b border-gray-100">
-                                        <div>
                                             <p className="font-bold text-[#1e293b] text-sm">ข้อความใหม่</p>
                                             <p className="text-[13px] text-gray-500 mt-0.5">รับการแจ้งเตือนเมื่อลูกค้าส่งข้อความมาหาคุณ</p>
                                         </div>
@@ -109,7 +289,7 @@ export default function SettingsPage() {
                                         />
                                     </div>
 
-                                    <div className="flex items-center justify-between pb-6 border-b border-gray-100">
+                                    <div className="flex items-center justify-between pb-6">
                                         <div>
                                             <p className="font-bold text-[#1e293b] text-sm">การยกเลิกคำสั่งซื้อ</p>
                                             <p className="text-[13px] text-gray-500 mt-0.5">รับการแจ้งเตือนเมื่อคำสั่งซื้อถูกยกเลิก</p>
@@ -120,21 +300,14 @@ export default function SettingsPage() {
                                         />
                                     </div>
 
-                                    <div className="flex items-center justify-between pb-6">
-                                        <div>
-                                            <p className="font-bold text-[#1e293b] text-sm">การแจ้งเตือนทางอีเมล</p>
-                                            <p className="text-[13px] text-gray-500 mt-0.5">รับการแจ้งเตือนผ่านกล่องข้อความอีเมล</p>
-                                        </div>
-                                        <Toggle
-                                            active={notifSettings.emailNotifications}
-                                            onChange={() => setNotifSettings(prev => ({ ...prev, emailNotifications: !prev.emailNotifications }))}
-                                        />
-                                    </div>
-
                                     <div className="pt-2">
-                                        <button className="bg-[#1d4ed8] hover:bg-[#1e40af] text-white px-6 py-2.5 rounded-[10px] text-[13px] font-bold flex items-center gap-2 transition-all shadow-[0_2px_10px_rgba(29,78,216,0.2)]">
-                                            <Save size={16} strokeWidth={2.5} />
-                                            บันทึกการตั้งค่าการแจ้งเตือน
+                                        <button
+                                            onClick={handleSaveNotificationSettings}
+                                            disabled={isSavingNotifications}
+                                            className="bg-[#1d4ed8] hover:bg-[#1e40af] text-white px-6 py-2.5 rounded-[10px] text-[13px] font-bold flex items-center gap-2 transition-all shadow-[0_2px_10px_rgba(29,78,216,0.2)] disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            {isSavingNotifications ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} strokeWidth={2.5} />}
+                                            {isSavingNotifications ? "กำลังบันทึก..." : "บันทึกการตั้งค่าการแจ้งเตือน"}
                                         </button>
                                     </div>
                                 </div>
@@ -181,9 +354,13 @@ export default function SettingsPage() {
                                     </div>
 
                                     <div className="pt-2 mb-8">
-                                        <button className="bg-[#1d4ed8] hover:bg-[#1e40af] text-white px-6 py-2.5 rounded-[10px] text-[13px] font-bold flex items-center gap-2 transition-all shadow-[0_2px_10px_rgba(29,78,216,0.2)]">
-                                            <Lock size={16} strokeWidth={2.5} />
-                                            เปลี่ยนรหัสผ่าน
+                                        <button
+                                            onClick={handleChangePassword}
+                                            disabled={isChangingPassword}
+                                            className="bg-[#1d4ed8] hover:bg-[#1e40af] text-white px-6 py-2.5 rounded-[10px] text-[13px] font-bold flex items-center gap-2 transition-all shadow-[0_2px_10px_rgba(29,78,216,0.2)] disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            {isChangingPassword ? <Loader2 size={16} className="animate-spin" /> : <Lock size={16} strokeWidth={2.5} />}
+                                            {isChangingPassword ? "กำลังเปลี่ยนรหัสผ่าน..." : "เปลี่ยนรหัสผ่าน"}
                                         </button>
                                     </div>
 
@@ -250,20 +427,42 @@ export default function SettingsPage() {
 
                                     <div>
                                         <label className="block text-[13px] font-bold text-[#1e293b] mb-2">อัปโหลด QR Code (PromptPay)</label>
-                                        <div className="border-2 border-dashed border-gray-200 rounded-xl p-8 text-center hover:bg-gray-50 transition-colors cursor-pointer group relative overflow-hidden">
-                                            <input type="file" accept="image/*" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
-                                            <div className="w-12 h-12 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
-                                                <UploadCloud size={24} />
-                                            </div>
-                                            <p className="text-[13px] font-bold text-gray-700">คลิกเพื่ออัปโหลดไฟล์ QR Code</p>
-                                            <p className="text-[12px] text-gray-500 mt-1">รองรับไฟล์ JPG, PNG</p>
+                                        <div
+                                            onClick={() => qrInputRef.current?.click()}
+                                            className="border-2 border-dashed border-gray-200 rounded-xl p-8 text-center hover:bg-gray-50 transition-colors cursor-pointer group relative overflow-hidden flex flex-col items-center justify-center"
+                                        >
+                                            <input
+                                                ref={qrInputRef}
+                                                type="file"
+                                                accept="image/*"
+                                                className="hidden"
+                                                onChange={handleQrChange}
+                                            />
+                                            {qrPreview ? (
+                                                <div className="flex flex-col items-center">
+                                                    <img src={qrPreview} alt="QR Code" className="max-h-40 rounded-xl shadow-sm mb-3 border border-gray-100" />
+                                                    <p className="text-[13px] font-bold text-gray-700">คลิกเพื่อเปลี่ยน QR Code</p>
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    <div className="w-12 h-12 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
+                                                        <UploadCloud size={24} />
+                                                    </div>
+                                                    <p className="text-[13px] font-bold text-gray-700">คลิกเพื่ออัปโหลดไฟล์ QR Code</p>
+                                                    <p className="text-[12px] text-gray-500 mt-1">รองรับไฟล์ JPG, PNG</p>
+                                                </>
+                                            )}
                                         </div>
                                     </div>
 
                                     <div className="pt-2 mb-8">
-                                        <button className="bg-[#1d4ed8] hover:bg-[#1e40af] text-white px-6 py-2.5 rounded-[10px] text-[13px] font-bold flex items-center gap-2 transition-all shadow-[0_2px_10px_rgba(29,78,216,0.2)]">
-                                            <Save size={16} strokeWidth={2.5} />
-                                            บันทึกข้อมูลการชำระเงิน
+                                        <button
+                                            onClick={handleSavePayment}
+                                            disabled={isSavingPayment}
+                                            className="bg-[#1d4ed8] hover:bg-[#1e40af] text-white px-6 py-2.5 rounded-[10px] text-[13px] font-bold flex items-center gap-2 transition-all shadow-[0_2px_10px_rgba(29,78,216,0.2)] disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            {isSavingPayment ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} strokeWidth={2.5} />}
+                                            {isSavingPayment ? "กำลังบันทึก..." : "บันทึกข้อมูลการชำระเงิน"}
                                         </button>
                                     </div>
                                 </div>
@@ -272,6 +471,59 @@ export default function SettingsPage() {
                     </div>
                 </div>
             </div>
+
+            {/* Alert/Error Modal */}
+            {alertModal && (
+                <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+                    <div className="bg-white w-full max-w-[340px] rounded-[28px] p-8 shadow-2xl text-center animate-in zoom-in-95 duration-200">
+                        <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${alertModal.type === 'error' ? 'bg-red-50' : 'bg-amber-50'
+                            }`}>
+                            {alertModal.type === 'error'
+                                ? <XCircle className="w-9 h-9 text-red-500" />
+                                : <AlertCircle className="w-9 h-9 text-amber-500" />
+                            }
+                        </div>
+                        <h3 className="text-[17px] font-bold text-[#1e293b] mb-1.5">{alertModal.title}</h3>
+                        <p className="text-sm text-gray-500 leading-relaxed">{alertModal.message}</p>
+                        <button
+                            onClick={() => setAlertModal(null)}
+                            className={`mt-6 w-full py-2.5 rounded-[12px] text-sm font-bold text-white transition-all ${alertModal.type === 'error'
+                                ? 'bg-red-500 hover:bg-red-600'
+                                : 'bg-amber-500 hover:bg-amber-600'
+                                }`}
+                        >
+                            ตกลง
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Processing / Success Modal */}
+            {
+                (isSavingPayment || isSavingNotifications || isChangingPassword || showSuccess) && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-in fade-in duration-300">
+                        <div className="bg-white w-full max-w-[320px] rounded-[32px] p-8 shadow-2xl text-center animate-in zoom-in-95 duration-300">
+                            {(isSavingPayment || isSavingNotifications || isChangingPassword) ? (
+                                <>
+                                    <div className="w-16 h-16 bg-[#E0F7FA] rounded-full flex items-center justify-center mx-auto mb-4">
+                                        <Loader2 className="w-10 h-10 text-[#06B6D4] animate-spin" />
+                                    </div>
+                                    <h3 className="text-xl font-bold text-[#455a64]">กำลังบันทึก...</h3>
+                                    <p className="text-sm text-[#90a4ae] mt-1">กรุณารอสักครู่ ระบบกำลังอัปเดตข้อมูล</p>
+                                </>
+                            ) : (
+                                <>
+                                    <div className="w-16 h-16 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                                        <Check size={40} strokeWidth={3} />
+                                    </div>
+                                    <h3 className="text-xl font-bold text-[#455a64]">บันทึกสำเร็จ!</h3>
+                                    <p className="text-sm text-[#90a4ae] mt-1">{successMessage}</p>
+                                </>
+                            )}
+                        </div>
+                    </div>
+                )
+            }
 
             <style jsx>{`
                 @keyframes fadeIn {
