@@ -146,7 +146,7 @@ authRoute.post('/forgot-password', async (c) => {
             return c.json({ error: 'กรุณาระบุอีเมล' }, 400)
         }
 
-        const redirectTo = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/auth/reset-password`
+        const redirectTo = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/auth/callback?next=/auth/reset-password`
 
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
             redirectTo,
@@ -161,6 +161,53 @@ authRoute.post('/forgot-password', async (c) => {
     } catch (err) {
         console.error('Forgot password error:', err)
         return c.json({ error: 'เกิดข้อผิดพลาดในระบบ' }, 500)
+    }
+})
+
+// ==========================================
+// POST /api/auth/change-email — เปลี่ยนอีเมล
+// ==========================================
+authRoute.post('/change-email', async (c) => {
+    try {
+        const { currentEmail, currentPassword, newEmail } = await c.req.json()
+
+        if (!currentEmail || !currentPassword || !newEmail) {
+            return c.json({ error: 'กรุณากรอกข้อมูลให้ครบ' }, 400)
+        }
+
+        // 1. ตรวจสอบรหัสผ่านปัจจุบันก่อน (เพื่อความปลอดภัย)
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+            email: currentEmail,
+            password: currentPassword,
+        })
+
+        if (signInError || !signInData.user || !signInData.session?.access_token) {
+            return c.json({ error: 'รหัสผ่านปัจจุบันไม่ถูกต้อง' }, 401)
+        }
+
+        // 2. ใช้ access_token ของ user เพื่ออัปเดตอีเมล
+        // Supabase จะส่งอีเมลยืนยันไปที่อีเมลใหม่โดยอัตโนมัติ
+        const { data: updateData, error: updateError } = await supabase.auth.admin.updateUserById(
+            signInData.user.id,
+            { email: newEmail }
+        )
+
+        if (updateError) {
+            // Check for specific error like email already taken
+            if (updateError.message.includes('already registered')) {
+                return c.json({ error: 'อีเมลนี้ถูกใช้งานแล้วในระบบ' }, 400)
+            }
+            return c.json({ error: updateError.message }, 400)
+        }
+
+        return c.json({
+            message: 'ส่งลิงก์ยืนยันไปที่อีเมลใหม่แล้ว กรุณาตรวจสอบอีเมล',
+            user: updateData.user
+        })
+
+    } catch (err) {
+        console.error('Change email error:', err)
+        return c.json({ error: 'เกิดข้อผิดพลาดในการเปลี่ยนอีเมล' }, 500)
     }
 })
 

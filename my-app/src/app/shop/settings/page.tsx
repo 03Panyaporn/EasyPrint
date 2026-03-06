@@ -35,9 +35,11 @@ export default function SettingsPage() {
     const [isSavingPayment, setIsSavingPayment] = useState(false)
     const [isSavingNotifications, setIsSavingNotifications] = useState(false)
     const [isChangingPassword, setIsChangingPassword] = useState(false)
+    const [emailChange, setEmailChange] = useState({ newEmail: "", currentPassword: "" })
+    const [isChangingEmail, setIsChangingEmail] = useState(false)
     const [showSuccess, setShowSuccess] = useState(false)
     const [successMessage, setSuccessMessage] = useState("บันทึกข้อมูลเรียบร้อยแล้ว")
-    const [alertModal, setAlertModal] = useState<{ type: 'error' | 'warning'; title: string; message: string } | null>(null)
+    const [alertModal, setAlertModal] = useState<{ type: 'error' | 'warning' | 'success'; title: string; message: string } | null>(null)
     const qrInputRef = useRef<HTMLInputElement>(null)
 
     useEffect(() => {
@@ -158,6 +160,53 @@ export default function SettingsPage() {
             setAlertModal({ type: 'error', title: 'ไม่สามารถบันทึกได้', message: error.message })
         } finally {
             setIsSavingNotifications(false)
+        }
+    }
+
+    const handleChangeEmail = async () => {
+        if (!emailChange.newEmail || !emailChange.currentPassword) {
+            setAlertModal({ type: 'warning', title: 'ข้อมูลไม่ครบถ้วน', message: 'กรุณากรอกอีเมลใหม่และรหัสผ่านปัจจุบันให้ครบถ้วน' })
+            return
+        }
+
+        setIsChangingEmail(true)
+        try {
+            const storedUser = sessionStorage.getItem('user')
+            if (!storedUser) throw new Error("ไม่พบข้อมูลผู้ใช้ กรุณาล็อกอินใหม่")
+            const userObj = JSON.parse(storedUser)
+            const currentEmail = userObj?.email
+            if (!currentEmail) throw new Error("ไม่พบอีเมลผู้ใช้ กรุณาล็อกอินใหม่")
+
+            const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
+            const res = await fetch(`${API_URL}/api/auth/change-email`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({
+                    currentEmail,
+                    currentPassword: emailChange.currentPassword,
+                    newEmail: emailChange.newEmail,
+                }),
+            })
+
+            const result = await res.json()
+            if (!res.ok) {
+                throw new Error(result.error || "ไม่สามารถเปลี่ยนอีเมลได้")
+            }
+
+            setEmailChange({ newEmail: "", currentPassword: "" })
+
+            setAlertModal({
+                type: 'success',
+                title: 'ส่งลิงก์ยืนยันแล้ว!',
+                message: `ระบบได้ส่งลิงก์สำหรับยืนยันการเปลี่ยนอีเมลไปที่ ${emailChange.newEmail} แล้ว กรุณาตรวจสอบกล่องจดหมายของคุณ (รวมถึงโฟลเดอร์ขยะ) เพื่อกดยืนยันการเปลี่ยนแปลง`
+            })
+
+        } catch (error: any) {
+            console.error("Error changing email:", error)
+            setAlertModal({ type: 'error', title: 'ไม่สามารถเปลี่ยนอีเมลได้', message: error.message })
+        } finally {
+            setIsChangingEmail(false)
         }
     }
 
@@ -314,6 +363,50 @@ export default function SettingsPage() {
 
                         {activeTab === "security" && (
                             <div className="max-w-2xl animate-[fadeIn_0.3s_ease]">
+                                {/* --------------------- Change Email Section --------------------- */}
+                                <div className="mb-10 pb-10 border-b border-gray-100">
+                                    <h2 className="text-[15px] font-bold text-[#1e293b] mb-2">เปลี่ยนอีเมลบัญชีร้านค้า</h2>
+                                    <p className="text-[13px] text-gray-500 mb-6 leading-relaxed">
+                                        หลังจากการเปลี่ยนอีเมล ระบบจะส่งลิงก์ยืนยันไปยังอีเมลใหม่ของคุณ คุณต้องคลิกลิงก์นั้นเพื่อยืนยันการเปลี่ยนแปลงก่อนอีเมลในระบบจะถูกอัปเดต
+                                    </p>
+
+                                    <div className="space-y-6">
+                                        <div>
+                                            <label className="block text-[13px] font-bold text-[#1e293b] mb-2">อีเมลใหม่</label>
+                                            <input
+                                                type="email"
+                                                placeholder="กรอกอีเมลใหม่ที่ต้องการใช้"
+                                                value={emailChange.newEmail}
+                                                onChange={(e) => setEmailChange({ ...emailChange, newEmail: e.target.value })}
+                                                className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-[13px] focus:outline-none focus:ring-2 focus:ring-[#1d4ed8]/30 focus:border-[#1d4ed8] transition-all"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-[13px] font-bold text-[#1e293b] mb-2">รหัสผ่านปัจจุบัน (เพื่อยืนยันตัวตน)</label>
+                                            <input
+                                                type="password"
+                                                placeholder="กรอกรหัสผ่านเพื่อยืนยันว่าเป็นคุณ"
+                                                value={emailChange.currentPassword}
+                                                onChange={(e) => setEmailChange({ ...emailChange, currentPassword: e.target.value })}
+                                                className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-[13px] focus:outline-none focus:ring-2 focus:ring-[#1d4ed8]/30 focus:border-[#1d4ed8] transition-all mb-1.5"
+                                            />
+                                        </div>
+
+                                        <div className="pt-2">
+                                            <button
+                                                onClick={handleChangeEmail}
+                                                disabled={isChangingEmail}
+                                                className="bg-white hover:bg-gray-50 text-[#455a64] border-2 border-gray-200 hover:border-[#06B6D4] hover:text-[#06B6D4] px-6 py-2.5 rounded-[10px] text-[13px] font-bold flex items-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                            >
+                                                {isChangingEmail ? <Loader2 size={16} className="animate-spin" /> : <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>}
+                                                {isChangingEmail ? "กำลังดำเนินการ..." : "ขอเปลี่ยนอีเมล"}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* --------------------- Change Password Section --------------------- */}
                                 <h2 className="text-[15px] font-bold text-[#1e293b] mb-6">อัปเดตรหัสผ่านเพื่อรักษาบัญชีของคุณให้ปลอดภัย</h2>
 
                                 <div className="space-y-6">

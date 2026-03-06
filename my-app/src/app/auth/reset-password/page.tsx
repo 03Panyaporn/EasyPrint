@@ -15,30 +15,17 @@ function ResetPasswordContent() {
     const [success, setSuccess] = useState(false)
     const [sessionReady, setSessionReady] = useState(false)
 
-    // Supabase sends the access_token in the URL hash after redirecting from email link
+    // The /auth/callback route handles the token exchange and sets the session cookie.
+    // By the time the user lands here, they should have an active session.
     useEffect(() => {
-        const hash = window.location.hash
-        if (hash) {
-            // Parse hash fragment: #access_token=...&type=recovery
-            const params = new URLSearchParams(hash.substring(1))
-            const access_token = params.get('access_token')
-            const refresh_token = params.get('refresh_token')
-            const type = params.get('type')
-
-            if (type === 'recovery' && access_token && refresh_token) {
-                supabase.auth.setSession({ access_token, refresh_token }).then(({ error }) => {
-                    if (error) {
-                        setError('ลิงก์รีเซ็ตรหัสผ่านไม่ถูกต้องหรือหมดอายุแล้ว')
-                    } else {
-                        setSessionReady(true)
-                    }
-                })
+        supabase.auth.getSession().then(({ data: { session }, error }) => {
+            if (error || !session) {
+                // If they sneaked in here without a session, they shouldn't be here
+                setError('กรุณาเข้าจากลิงก์ในอีเมลเท่านั้น หรือลิงก์อาจหมดอายุแล้ว')
             } else {
-                setError('ลิงก์รีเซ็ตรหัสผ่านไม่ถูกต้อง')
+                setSessionReady(true)
             }
-        } else {
-            setError('ไม่พบ token สำหรับรีเซ็ตรหัสผ่าน กรุณาคลิกลิงก์จากอีเมลอีกครั้ง')
-        }
+        })
     }, [])
 
     const handleReset = async (e: React.FormEvent) => {

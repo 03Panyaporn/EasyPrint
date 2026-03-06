@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "@supabase/auth-helpers-nextjs": "^0.15.0",
     "@types/bcryptjs": "^2.4.6",
     "@types/better-sqlite3": "^7.6.13",
     "@types/js-cookie": "^3.0.6",
