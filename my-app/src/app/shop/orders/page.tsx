@@ -13,8 +13,10 @@ import {
     ChevronRight,
     Trash2,
     X,
+    LogOut,
 } from "lucide-react"
 import { supabase } from "@/lib/supabase"
+import MerchantProfile from "@/components/ui/shop/MerchantProfile"
 
 const statusSequence = [
     { label: "รอตรวจสอบสลิป", color: "bg-[#FFF9C4] text-[#F9A825]", progress: 10 },
@@ -35,7 +37,6 @@ const getStatusInfo = (status: string) => {
 }
 
 export default function OrdersPage() {
-    const [userName, setUserName] = useState("ร้านค้า")
     const [orders, setOrders] = useState<any[]>([])
     const [filterStatus, setFilterStatus] = useState("ทั้งหมด")
     const [currentPage, setCurrentPage] = useState(1)
@@ -53,30 +54,6 @@ export default function OrdersPage() {
     const [isCancelConfirmOpen, setIsCancelConfirmOpen] = useState(false)
     const [selectedOrder, setSelectedOrder] = useState<any>(null)
     const [previewFile, setPreviewFile] = useState<{ url: string, name: string } | null>(null)
-
-    useEffect(() => {
-        try {
-            const user = sessionStorage.getItem('user')
-            if (user) {
-                const parsed = JSON.parse(user)
-                setUserName(parsed.name || parsed.email || "ร้านค้า")
-            }
-        } catch { }
-
-        // Fetch Initial
-        fetchOrders();
-
-        // Realtime Subscription
-        const channel = supabase.channel('shop-orders-realtime')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
-                fetchOrders(); // Refresh
-            })
-            .subscribe();
-
-        return () => {
-            supabase.removeChannel(channel);
-        };
-    }, [])
 
     const fetchOrders = async () => {
         try {
@@ -124,6 +101,22 @@ export default function OrdersPage() {
             console.error(error);
         }
     }
+
+    useEffect(() => {
+        // Fetch Initial
+        fetchOrders();
+
+        // Realtime Subscription
+        const channel = supabase.channel('shop-orders-realtime')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
+                fetchOrders(); // Refresh
+            })
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [])
 
     // Handler functions
     const openUpdateModal = (order: any) => {
@@ -258,15 +251,7 @@ export default function OrdersPage() {
                     <p className="text-[13px] text-gray-500 mt-1">จัดการคำสั่งซื้อของลูกค้า ทั้งหมด</p>
                 </div>
 
-                <div className="flex items-center gap-4 px-2 border-l border-[#e5e7eb] pl-6">
-                    <div className="text-right">
-                        <p className="text-sm font-semibold text-[#455a64]">Shop EasyPrint</p>
-                        <p className="text-xs text-[#90a4ae]">{userName}</p>
-                    </div>
-                    <div className="w-10 h-10 rounded-full bg-[#06B6D4] flex items-center justify-center text-white shadow-md">
-                        <User size={20} />
-                    </div>
-                </div>
+                <MerchantProfile />
             </div>
 
             {/* Status Summary Cards */}

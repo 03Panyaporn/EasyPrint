@@ -10,8 +10,10 @@ import {
     XCircle,
     CheckCircle2,
     User,
-    ChevronRight
+    ChevronRight,
+    LogOut
 } from "lucide-react"
+import MerchantProfile from "@/components/ui/shop/MerchantProfile"
 
 import { useEffect } from "react"
 import { supabase } from "@/lib/supabase"
@@ -251,15 +253,7 @@ export default function NotificationsPage() {
                     </div>
                 </div>
 
-                <div className="flex items-center gap-4 px-2 border-l border-[#e5e7eb] pl-6">
-                    <div className="text-right">
-                        <p className="text-sm font-semibold text-[#455a64]">Shop EasyPrint</p>
-                        <p className="text-[11px] font-medium text-gray-400">Test User</p>
-                    </div>
-                    <div className="w-10 h-10 rounded-full bg-[#06B6D4] flex items-center justify-center text-white shadow-md">
-                        <User size={20} />
-                    </div>
-                </div>
+                <MerchantProfile />
             </div>
 
             {/* Notifications Main Container */}

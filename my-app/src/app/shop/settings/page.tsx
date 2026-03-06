@@ -1,5 +1,8 @@
 "use client"
 
+import { useState } from "react"
+import { Search, Bell, Lock, AlertCircle, Save, CreditCard, UploadCloud, User, LogOut } from "lucide-react"
+import MerchantProfile from "@/components/ui/shop/MerchantProfile"
 import { useState, useEffect, useRef } from "react"
 import { Search, Bell, Lock, AlertCircle, Save, CreditCard, UploadCloud, User, Loader2, Check, XCircle, X } from "lucide-react"
 import { supabase } from "@/lib/supabase"
@@ -225,15 +228,7 @@ export default function SettingsPage() {
                     <h1 className="text-3xl font-bold text-[#455a64]">ตั้งค่า</h1>
                     <p className="text-[13px] text-gray-500 mt-1">จัดการการตั้งค่าและตัวเลือกของร้านค้าของคุณ</p>
                 </div>
-                <div className="flex items-center gap-4 px-2 border-l border-[#e5e7eb] pl-6">
-                    <div className="text-right">
-                        <p className="text-sm font-semibold text-[#455a64]">Shop EasyPrint</p>
-                        <p className="text-[11px] font-medium text-gray-400">Test User</p>
-                    </div>
-                    <div className="w-10 h-10 rounded-full bg-[#06B6D4] flex items-center justify-center text-white shadow-md">
-                        <User size={20} />
-                    </div>
-                </div>
+                <MerchantProfile />
             </div>
 
             <div className="max-w-4xl mx-auto space-y-6">

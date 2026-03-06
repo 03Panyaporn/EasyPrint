@@ -18,6 +18,10 @@ import {
     ChevronRight,
     X,
     MessageSquare,
+    LogOut,
+} from "lucide-react"
+import { supabase } from "@/lib/supabase"
+import MerchantProfile from "@/components/ui/shop/MerchantProfile"
     ShoppingCart,
 } from "lucide-react"
 import { supabase } from "@/lib/supabase"
@@ -341,15 +345,7 @@ export default function ShopDashboard() {
                         </button>
                     </div>
 
-                    <div className="flex items-center gap-3 border-l pl-6 border-[#e5e7eb]">
-                        <div className="text-right">
-                            <p className="text-sm font-semibold text-[#455a64]">Shop EasyPrint</p>
-                            <p className="text-xs text-[#90a4ae]">{userName}</p>
-                        </div>
-                        <div className="w-10 h-10 rounded-full bg-[#06B6D4] flex items-center justify-center text-white font-bold text-sm shadow-md shadow-[#06B6D4]/20">
-                            <User size={20} />
-                        </div>
-                    </div>
+                    <MerchantProfile />
                 </div>
             </div>
             <div className="grid grid-cols-3 gap-6 mb-8">

@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from "react"
 import Link from "next/link"
 import { useAuth } from "@/context/AuthContext"
+import { supabase } from "@/lib/supabase"
 
 // ─────────────────────────────────────────────
 // Auth Modal Component
@@ -324,6 +325,22 @@ const steps = [
 // ─────────────────────────────────────────────
 export default function Home() {
   const [authModal, setAuthModal] = useState<"login" | "register" | null>(null)
+  const [shopInfo, setShopInfo] = useState<{ maps_url: string | null }>({
+    maps_url: null
+  })
+
+  useEffect(() => {
+    supabase
+      .from('shops')
+      .select('maps_url')
+      .eq('id', 'b9652bb2-cba5-4440-9d89-0f93f598cb67')
+      .single()
+      .then(({ data }) => {
+        if (data) {
+          setShopInfo({ maps_url: data.maps_url || null })
+        }
+      })
+  }, [])
 
   // ถ้า Login อยู่แล้ว ให้ Redirect ไปหน้า Dashboard ของตัวเองทันที
   // เพื่อป้องกันความสับสนระหว่างหน้า Landing และหน้าใช้งานจริง
@@ -345,6 +362,7 @@ export default function Home() {
       }
     }
   }, [])
+
 
   return (
     <div className="min-h-screen bg-white">
@@ -577,16 +595,46 @@ export default function Home() {
 
               <div className="flex gap-3 mt-6">
                 {[
-                  <path key="phone" d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 014.69 13 19.79 19.79 0 011.61 4.41C1.61 3.26 2.39 2.26 3.52 2H6.5a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L7.55 9.5a16 16 0 006.91 6.91l.78-.78a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z" />,
-                  <>
-                    <path key="m1" d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-                    <polyline key="m2" points="22,6 12,13 2,6" />
-                  </>,
-                  <path key="chat" d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />,
-                ].map((icon, i) => (
-                  <button key={i} className="w-9 h-9 rounded-xl border border-gray-200 flex items-center justify-center text-[#78909c] hover:text-[#06B6D4] hover:border-[#06B6D4] hover:bg-[#06B6D4]/10 transition-all duration-200">
+                  {
+                    icon: <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 014.69 13 19.79 19.79 0 011.61 4.41C1.61 3.26 2.39 2.26 3.52 2H6.5a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L7.55 9.5a16 16 0 006.91 6.91l.78-.78a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z" />,
+                    title: "เบอร์โทรศัพท์",
+                    action: () => { }
+                  },
+                  {
+                    icon: (
+                      <>
+                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                        <polyline points="22,6 12,13 2,6" />
+                      </>
+                    ),
+                    title: "อีเมล",
+                    action: () => { }
+                  },
+                  {
+                    icon: <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />,
+                    title: "แชท",
+                    action: () => { }
+                  },
+                  {
+                    icon: (
+                      <>
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                        <circle cx="12" cy="10" r="3" />
+                      </>
+                    ),
+                    title: "ตำแหน่งร้านค้า",
+                    action: () => shopInfo.maps_url && window.open(shopInfo.maps_url, '_blank'),
+                    show: !!shopInfo.maps_url
+                  }
+                ].filter(btn => btn.show !== false).map((btn, i) => (
+                  <button
+                    key={i}
+                    onClick={btn.action}
+                    title={btn.title}
+                    className="w-9 h-9 rounded-xl border border-gray-200 flex items-center justify-center text-[#78909c] hover:text-[#06B6D4] hover:border-[#06B6D4] hover:bg-[#06B6D4]/10 transition-all duration-200 hover:scale-110 active:scale-95"
+                  >
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      {icon}
+                      {btn.icon}
                     </svg>
                   </button>
                 ))}
@@ -596,11 +644,15 @@ export default function Home() {
             <div>
               <h4 className="text-[#06B6D4] font-semibold uppercase tracking-widest text-xs mb-4">Platform</h4>
               <ul className="space-y-2.5 text-[#78909c] text-sm">
-                {["สั่งพิมพ์งาน", "ดูราคาบริการ", "ติดตามสถานะ", "ช่วยเหลือ"].map((item) => (
-                  <li key={item}>
-                    <a href="#" className="hover:text-[#06B6D4] transition-colors inline-flex items-center gap-1.5 group">
+                {[
+                  { name: "สั่งพิมพ์งาน", href: "/customer/order" },
+                  { name: "ดูราคาบริการ", href: "/customer/pricing" },
+                  { name: "ติดตามสถานะ", href: "/customer/tracking" },
+                ].map((item) => (
+                  <li key={item.name}>
+                    <a href={item.href} className="hover:text-[#06B6D4] transition-colors inline-flex items-center gap-1.5 group">
                       <span className="w-0 group-hover:w-3 h-px bg-[#06B6D4] transition-all duration-200 rounded-full" />
-                      {item}
+                      {item.name}
                     </a>
                   </li>
                 ))}
