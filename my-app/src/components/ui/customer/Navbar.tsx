@@ -1,15 +1,18 @@
 "use client"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useCart } from "@/context/CartContext"
 import { useChatUnread } from "@/hooks/useChatUnread"
-
+import { supabase } from "@/lib/supabase"
 import { useAuth } from "@/context/AuthContext"
+
+const SHOP_ID = "b9652bb2-cba5-4440-9d89-0f93f598cb67"
 
 export default function Navbar() {
     const { cartCount } = useCart();
     const [showLogoutModal, setShowLogoutModal] = useState(false)
     const { user, logout } = useAuth()
+    const [isShopOpen, setIsShopOpen] = useState(true)
 
     // Use the custom hook for unread count
     const unreadCount = useChatUnread({ userId: user?.id, userType: 'customer' })
@@ -18,14 +21,48 @@ export default function Navbar() {
         await logout()
     }
 
+    useEffect(() => {
+        const fetchStatus = async () => {
+            const { data } = await supabase
+                .from('shops')
+                .select('is_open')
+                .eq('id', SHOP_ID)
+                .single()
+            if (data) setIsShopOpen(data.is_open)
+        }
+        fetchStatus()
+
+        // Realtime subscription
+        const channel = supabase.channel('shop-status-customer')
+            .on('postgres_changes', {
+                event: 'UPDATE',
+                schema: 'public',
+                table: 'shops',
+                filter: `id=eq.${SHOP_ID}`
+            }, (payload) => {
+                if (payload.new && typeof payload.new.is_open === 'boolean') {
+                    setIsShopOpen(payload.new.is_open)
+                }
+            })
+            .subscribe()
+
+        return () => {
+            supabase.removeChannel(channel)
+        }
+    }, [])
+
     return (
         <div className="bg-white">
             {/* Top status bar */}
-            <div className="bg-gradient-to-r from-[#E0F3F7] to-[#F0FAFB] py-1.5 px-6 flex items-center gap-2.5 border-b border-[#d1e9ed]">
-                <div className="w-10 h-5 bg-[#06B6D4] rounded-full flex items-center px-0.5 shadow-inner cursor-pointer hover:bg-[#0891b2] transition-colors duration-200">
-                    <div className="w-4 h-4 bg-white rounded-full ml-auto shadow-sm" />
+            <div className={`bg-gradient-to-r ${isShopOpen ? 'from-[#E0F3F7] to-[#F0FAFB]' : 'from-rose-50 to-rose-100'} py-1.5 px-6 flex items-center gap-2.5 border-b ${isShopOpen ? 'border-[#d1e9ed]' : 'border-rose-200'}`}>
+                <div className={`w-8 h-4 rounded-full flex items-center px-0.5 transition-all duration-500 shadow-inner ${isShopOpen ? 'bg-[#06B6D4]' : 'bg-rose-400'}`}>
+                    <div className={`w-3 h-3 bg-white rounded-full shadow-sm transition-transform duration-500 ${isShopOpen ? 'translate-x-[16px]' : 'translate-x-0'}`} />
                 </div>
-                <span className="text-sm text-[#7eb6c5]">สถานะร้านค้า : <span className="text-[#06B6D4] font-semibold">เปิดบริการ</span></span>
+                <span className={`text-sm ${isShopOpen ? 'text-[#7eb6c5]' : 'text-rose-500'}`}>
+                    สถานะร้านค้า : <span className={`font-bold ${isShopOpen ? 'text-[#06B6D4]' : 'text-rose-600'}`}>
+                        {isShopOpen ? 'เปิดบริการ' : 'ปิดบริการชั่วคราว'}
+                    </span>
+                </span>
             </div>
 
             {/* Main Navbar */}

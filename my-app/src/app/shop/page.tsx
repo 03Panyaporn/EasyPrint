@@ -216,10 +216,13 @@ const statusSequence = [
     { label: "รับแล้ว", color: "bg-[#F5F5F5] text-[#9E9E9E]", progress: 100 },
 ]
 
+const SHOP_ID = "b9652bb2-cba5-4440-9d89-0f93f598cb67"
+
 export default function ShopDashboard() {
     const [userName, setUserName] = useState("ร้านค้า")
     const [filterPeriod, setFilterPeriod] = useState("Last 7 Days")
     const [isShopOpen, setIsShopOpen] = useState(true)
+    const [isTogglingShop, setIsTogglingShop] = useState(false)
     const [orders, setOrders] = useState<any[]>([])
 
     // Modal states
@@ -308,6 +311,39 @@ export default function ShopDashboard() {
         closeAllModals()
     }
 
+    const fetchShopStatus = async () => {
+        try {
+            const { data, error } = await supabase
+                .from('shops')
+                .select('is_open')
+                .eq('id', SHOP_ID)
+                .single()
+            if (error) throw error
+            if (data) setIsShopOpen(data.is_open ?? true)
+        } catch (err) {
+            console.error("Error fetching shop status:", err)
+        }
+    }
+
+    const handleToggleShop = async () => {
+        if (isTogglingShop) return
+        const newStatus = !isShopOpen
+        setIsTogglingShop(true)
+        try {
+            const { error } = await supabase
+                .from('shops')
+                .update({ is_open: newStatus })
+                .eq('id', SHOP_ID)
+            if (error) throw error
+            setIsShopOpen(newStatus)
+        } catch (err) {
+            console.error("Error updating shop status:", err)
+            alert("เกิดข้อผิดพลาดในการเปลี่ยนสถานะร้านค้า")
+        } finally {
+            setIsTogglingShop(false)
+        }
+    }
+
     useEffect(() => {
         try {
             const user = sessionStorage.getItem('user')
@@ -317,16 +353,33 @@ export default function ShopDashboard() {
             }
         } catch { }
 
+        fetchShopStatus()
         fetchOrders();
 
-        const channel = supabase.channel('dashboard-orders-realtime')
+        // ฟังการเปลี่ยนแปลงของออเดอร์
+        const ordersChannel = supabase.channel('dashboard-orders-realtime')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
                 fetchOrders();
             })
             .subscribe();
 
+        // ฟังการเปลี่ยนแปลงของสถานะร้านค้า
+        const shopChannel = supabase.channel('shop-status-dashboard')
+            .on('postgres_changes', {
+                event: 'UPDATE',
+                schema: 'public',
+                table: 'shops',
+                filter: `id=eq.${SHOP_ID}`
+            }, (payload) => {
+                if (payload.new && typeof payload.new.is_open === 'boolean') {
+                    setIsShopOpen(payload.new.is_open)
+                }
+            })
+            .subscribe();
+
         return () => {
-            supabase.removeChannel(channel);
+            supabase.removeChannel(ordersChannel);
+            supabase.removeChannel(shopChannel);
         };
     }, [])
 
@@ -475,10 +528,17 @@ export default function ShopDashboard() {
                             </span>
                         </div>
                         <button
-                            onClick={() => setIsShopOpen(!isShopOpen)}
-                            className={`relative w-12 h-6 rounded-full transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#06B6D4] ${isShopOpen ? 'bg-emerald-500' : 'bg-rose-500'}`}
+                            onClick={handleToggleShop}
+                            disabled={isTogglingShop}
+                            className={`relative w-12 h-6 rounded-full transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#06B6D4] disabled:opacity-70 ${isShopOpen ? 'bg-emerald-500' : 'bg-rose-500'}`}
                         >
-                            <div className={`absolute left-1 top-1 w-4 h-4 rounded-full bg-white transition-transform duration-300 ${isShopOpen ? 'translate-x-6' : 'translate-x-0 '}`} />
+                            {isTogglingShop ? (
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                    <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                </div>
+                            ) : (
+                                <div className={`absolute left-1 top-1 w-4 h-4 rounded-full bg-white transition-transform duration-300 ${isShopOpen ? 'translate-x-6' : 'translate-x-0'}`} />
+                            )}
                         </button>
                     </div>
 
