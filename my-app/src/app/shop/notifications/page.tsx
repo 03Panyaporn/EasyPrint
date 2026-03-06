@@ -41,7 +41,7 @@ export default function NotificationsPage() {
         try {
             const { data, error } = await supabase
                 .from('orders')
-                .select(`id, created_at, status, order_items(file_name, quantity)`)
+                .select(`id, created_at, status, total_price, order_items (*)`)
                 .order('created_at', { ascending: false });
 
             if (data && !error) {
@@ -49,30 +49,40 @@ export default function NotificationsPage() {
                     .filter(o => o.status === 'รอตรวจสอบสลิป' || o.status === 'ยกเลิก')
                     .map(order => {
                         const isCancel = order.status === 'ยกเลิก';
-                        const notifId = `${order.id}-${order.status}`; // Unique ID for event
+                        const notifId = `${order.id}-${order.status}`;
 
                         const items = order.order_items || [];
                         const itemCount = items.length;
+                        const firstItemName = items.length > 0 ? items[0].file_name : "";
+                        const itemStr = itemCount > 1
+                            ? `${firstItemName} และอีก ${itemCount - 1} ไฟล์`
+                            : (firstItemName || `${itemCount} รายการ`);
 
                         const dateStr = new Date(order.created_at).toISOString().split('T')[0].replace(/-/g, '');
                         const shortId = `ORD-${dateStr}-${order.id.split('-')[0].substring(0, 4).toUpperCase()}`;
 
-                        // Calculate time difference
                         const timeDiff = Date.now() - new Date(order.created_at).getTime();
                         const hours = Math.floor(timeDiff / (1000 * 60 * 60));
                         const minutes = Math.floor((timeDiff / (1000 * 60)) % 60);
                         const timeStr = hours > 0 ? `${hours} ชั่วโมงที่แล้ว` : minutes > 0 ? `${minutes} นาทีที่แล้ว` : `เพิ่งเริ่มต้น`;
+
+                        const totalPrice = Number(order.total_price || 0).toFixed(2);
 
                         return {
                             id: notifId,
                             realOrderId: order.id,
                             type: isCancel ? "cancel" : "order",
                             title: isCancel ? "คำสั่งซื้อถูกยกเลิก" : "ได้รับคำสั่งซื้อใหม่",
-                            description: isCancel ? `คำสั่งซื้อ ${shortId} ถูกลูกค้ายกเลิกแล้ว` : `คำสั่งซื้อ ${shortId} จากลูกค้า - มีสินค้ารวม ${itemCount} รายการ`,
+                            orderId: shortId,
+                            fileInfo: isCancel ? null : itemStr,
+                            totalPrice: isCancel ? null : totalPrice,
+                            description: isCancel
+                                ? `ลูกค้ายกเลิกคำสั่งซื้อแล้ว`
+                                : `ลูกค้าสั่งพิมพ์งานเข้ามา`,
                             time: timeStr,
                             icon: isCancel ? XCircle : ShoppingCart,
-                            iconBg: isCancel ? "bg-red-50/80" : "bg-blue-50/80",
-                            iconColor: isCancel ? "text-red-500" : "text-blue-500",
+                            iconBg: isCancel ? "bg-red-50/80" : "bg-[#E0F7FA]",
+                            iconColor: isCancel ? "text-red-500" : "text-[#06B6D4]",
                         }
                     });
                 setNotifications(notifs);
@@ -174,7 +184,7 @@ export default function NotificationsPage() {
                         {/* Mark all read button */}
                         <button
                             onClick={handleMarkAllRead}
-                            className="bg-[#1d4ed8] hover:bg-[#1e40af] text-white px-5 py-2.5 rounded-[10px] text-[13px] font-bold flex items-center gap-2 transition-all shadow-[0_2px_10px_rgba(29,78,216,0.2)]"
+                            className="bg-[#06B6D4] hover:bg-[#0891b2] text-white px-5 py-2.5 rounded-[10px] text-[13px] font-bold flex items-center gap-2 transition-all shadow-[0_2px_10px_rgba(6,182,212,0.2)]"
                         >
                             <Check size={16} strokeWidth={2.5} />
                             อ่านแล้วทั้งหมด
@@ -195,30 +205,48 @@ export default function NotificationsPage() {
                                         router.push(`/shop/orders?highlight=${notification.realOrderId}`);
                                     }
                                 }}
-                                className={`bg-white rounded-[14px] p-5 border shadow-sm flex items-center justify-between transition-all hover:-translate-y-0.5 hover:shadow-md cursor-pointer ${!readIds.includes(notification.id) ? 'border-l-[5px] border-l-[#1d4ed8] border-y-gray-100 border-r-gray-100' : 'border-gray-100 border-l-[5px] border-l-transparent'}`}
+                                className={`bg-white rounded-[14px] p-5 border shadow-sm flex items-center justify-between transition-all hover:-translate-y-0.5 hover:shadow-md cursor-pointer ${!readIds.includes(notification.id) ? 'border-l-[5px] border-l-[#06B6D4] border-y-gray-100 border-r-gray-100' : 'border-gray-100 border-l-[5px] border-l-transparent'}`}
                             >
-                                <div className="flex items-center gap-5 ml-1">
-                                    <div className={`w-[50px] h-[50px] rounded-[14px] flex items-center justify-center ${notification.iconBg} ${notification.iconColor}`}>
+                                <div className="flex items-center gap-5 ml-1 flex-1 min-w-0">
+                                    <div className={`w-[50px] h-[50px] rounded-[14px] flex items-center justify-center shrink-0 ${notification.iconBg} ${notification.iconColor}`}>
                                         <Icon size={24} strokeWidth={1.5} />
                                     </div>
-                                    <div className="flex flex-col">
+                                    <div className="flex flex-col gap-1 min-w-0">
                                         <div className="flex items-center gap-2">
                                             <h3 className="font-bold text-[#1e293b] text-[15px]">{notification.title}</h3>
                                         </div>
-                                        <p className="text-gray-500 text-[13px] font-medium leading-relaxed my-0.5">{notification.description}</p>
-                                        <p className="text-[#94a3b8] text-xs font-medium">{notification.time}</p>
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                            <span className="text-[12px] font-semibold text-[#06B6D4] bg-[#E0F7FA] px-2 py-0.5 rounded-md">
+                                                {notification.orderId}
+                                            </span>
+                                            <span className="text-gray-400 text-[13px]">•</span>
+                                            <span className="text-gray-500 text-[13px] font-medium">{notification.description}</span>
+                                        </div>
+                                        {notification.fileInfo && (
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                                <span className="text-[12px] text-[#64748b] bg-gray-100 px-2 py-0.5 rounded-md font-medium truncate max-w-[200px]">
+                                                    📄 {notification.fileInfo}
+                                                </span>
+                                                {notification.totalPrice && (
+                                                    <span className="text-[12px] text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md font-bold">
+                                                        ฿ {notification.totalPrice}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        )}
+                                        <p className="text-[#94a3b8] text-[11px] font-medium">{notification.time}</p>
                                     </div>
                                 </div>
 
                                 <div className="flex items-center gap-4 pl-4 border-l border-gray-100">
-                                    <ChevronRight size={18} className="text-gray-300 group-hover:text-[#1d4ed8] transition-colors" />
+                                    <ChevronRight size={18} className="text-gray-300 group-hover:text-[#06B6D4] transition-colors" />
                                     {(!readIds.includes(notification.id)) && (
                                         <button
                                             onClick={(e) => { e.stopPropagation(); handleMarkAsRead(notification.id); }}
                                             className="p-2 transition-all group/dot flex items-center justify-center w-10 h-10 hover:bg-blue-50/50 rounded-full"
                                             title="ทำเครื่องหมายว่าอ่านแล้ว"
                                         >
-                                            <div className="w-3.5 h-3.5 bg-[#1d4ed8] rounded-full shadow-sm group-hover/dot:scale-110 group-hover/dot:bg-[#1e40af] transition-all" />
+                                            <div className="w-3.5 h-3.5 bg-[#06B6D4] rounded-full shadow-sm group-hover/dot:scale-110 group-hover/dot:bg-[#0891b2] transition-all" />
                                         </button>
                                     )}
                                     <button

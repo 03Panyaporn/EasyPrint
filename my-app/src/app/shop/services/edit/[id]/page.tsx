@@ -17,6 +17,9 @@ export default function EditServicePage() {
 
     // ─── FORM STATES ───
     const [category, setCategory] = useState("เอกสาร")
+    const [customCategories, setCustomCategories] = useState<string[]>([])
+    const [newCategoryInput, setNewCategoryInput] = useState("")
+    const [showCategoryInput, setShowCategoryInput] = useState(false)
     const [priceUnit, setPriceUnit] = useState("ต่อหน้า")
     const [basePrice, setBasePrice] = useState(2)
     const [minQuantity, setMinQuantity] = useState(1)
@@ -53,6 +56,11 @@ export default function EditServicePage() {
 
             if (data) {
                 setCategory(data.category || "เอกสาร")
+                // If fetched category is not in defaults, add as custom
+                const defaults = ["เอกสาร", "โปสเตอร์", "รูปภาพ", "นามบัตร"];
+                if (data.category && !defaults.includes(data.category)) {
+                    setCustomCategories([data.category]);
+                }
                 setPriceUnit(data.unit || "ต่อหน้า")
                 setBasePrice(data.base_price || 0)
                 setMinQuantity(data.min_quantity || 1)
@@ -209,18 +217,95 @@ export default function EditServicePage() {
                                 <label className="block text-sm font-bold text-[#455a64] mb-2">
                                     ประเภทสินค้า <span className="text-red-500">*</span>
                                 </label>
-                                <div className="flex gap-4">
+                                <div className="flex items-center gap-2">
                                     <select
                                         value={category}
                                         onChange={(e) => setCategory(e.target.value)}
-                                        className="flex-1 rounded-2xl border-none p-4 text-[#455a64] bg-white shadow-sm focus:ring-2 focus:ring-[#06B6D4]/30 outline-none transition-all"
-                                    >
+                                        className="flex-1 rounded-2xl border-none p-4 text-[#455a64] bg-white shadow-sm focus:ring-2 focus:ring-[#06B6D4]/30 outline-none transition-all">
                                         <option>เอกสาร</option>
                                         <option>โปสเตอร์</option>
                                         <option>รูปภาพ</option>
                                         <option>นามบัตร</option>
+                                        {customCategories.map(cat => (
+                                            <option key={cat}>{cat}</option>
+                                        ))}
                                     </select>
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowCategoryInput(!showCategoryInput)}
+                                        className="flex items-center gap-1.5 px-4 py-4 bg-white text-[#06B6D4] rounded-2xl shadow-sm hover:bg-[#E0F7FA] transition-all text-sm font-bold whitespace-nowrap border border-[#E0F7FA] hover:border-[#06B6D4]/30"
+                                    >
+                                        <Plus size={16} />
+                                        เพิ่มประเภท
+                                    </button>
                                 </div>
+                                {showCategoryInput && (
+                                    <div className="mt-3 flex items-center gap-2 animate-in slide-in-from-top-2 duration-200">
+                                        <input
+                                            type="text"
+                                            value={newCategoryInput}
+                                            onChange={(e) => setNewCategoryInput(e.target.value)}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter' && newCategoryInput.trim()) {
+                                                    const name = newCategoryInput.trim();
+                                                    if (!['เอกสาร', 'โปสเตอร์', 'รูปภาพ', 'นามบัตร', ...customCategories].includes(name)) {
+                                                        setCustomCategories(prev => [...prev, name]);
+                                                        setCategory(name);
+                                                    }
+                                                    setNewCategoryInput('');
+                                                    setShowCategoryInput(false);
+                                                }
+                                            }}
+                                            placeholder="พิมพ์ชื่อประเภทใหม่..."
+                                            className="flex-1 rounded-xl border border-[#E0E0E0] p-3 text-sm text-[#455a64] bg-white focus:outline-none focus:border-[#06B6D4] focus:ring-2 focus:ring-[#06B6D4]/20 transition-all"
+                                            autoFocus
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                if (newCategoryInput.trim()) {
+                                                    const name = newCategoryInput.trim();
+                                                    if (!['เอกสาร', 'โปสเตอร์', 'รูปภาพ', 'นามบัตร', ...customCategories].includes(name)) {
+                                                        setCustomCategories(prev => [...prev, name]);
+                                                        setCategory(name);
+                                                    }
+                                                    setNewCategoryInput('');
+                                                    setShowCategoryInput(false);
+                                                }
+                                            }}
+                                            disabled={!newCategoryInput.trim()}
+                                            className="px-4 py-3 bg-[#06B6D4] text-white rounded-xl text-sm font-bold hover:bg-[#0891b2] transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            เพิ่ม
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => { setShowCategoryInput(false); setNewCategoryInput(''); }}
+                                            className="p-3 text-[#90a4ae] hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all"
+                                        >
+                                            ✕
+                                        </button>
+                                    </div>
+                                )}
+                                {customCategories.length > 0 && (
+                                    <div className="mt-3 flex flex-wrap gap-2">
+                                        {customCategories.map(cat => (
+                                            <span key={cat} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#E0F7FA] text-[#06B6D4] text-xs font-bold rounded-full">
+                                                {cat}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setCustomCategories(prev => prev.filter(c => c !== cat));
+                                                        if (category === cat) setCategory("เอกสาร");
+                                                    }}
+                                                    className="w-4 h-4 flex items-center justify-center rounded-full bg-[#06B6D4]/20 hover:bg-rose-500 hover:text-white text-[#06B6D4] transition-all text-[10px] leading-none"
+                                                >
+                                                    ✕
+                                                </button>
+                                            </span>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>

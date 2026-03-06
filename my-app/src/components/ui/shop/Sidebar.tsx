@@ -32,6 +32,7 @@ const bottomMenuItems = [
 ]
 
 import { useChatUnread } from "@/hooks/useChatUnread"
+import { useUnreadNotifications } from "@/hooks/useUnreadNotifications"
 
 import { useAuth } from "@/context/AuthContext"
 
@@ -41,6 +42,7 @@ export default function Sidebar() {
     const { user, logout } = useAuth()
 
     const unreadChatsCount = useChatUnread({ userId: user?.id, userType: 'merchant' })
+    const unreadNotifsCount = useUnreadNotifications()
 
     const handleLogout = async () => {
         await logout()
@@ -123,9 +125,9 @@ export default function Sidebar() {
                                     }`}
                             />
                             <span>{item.label}</span>
-                            {item.label === "แจ้งเตือน" && (
-                                <span className="ml-auto min-w-[20px] h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1.5">
-                                    3
+                            {item.label === "แจ้งเตือน" && unreadNotifsCount > 0 && (
+                                <span className="ml-auto min-w-[20px] h-5 bg-[#06B6D4] text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1.5">
+                                    {unreadNotifsCount}
                                 </span>
                             )}
                         </Link>

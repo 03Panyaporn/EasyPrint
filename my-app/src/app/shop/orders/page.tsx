@@ -38,6 +38,8 @@ export default function OrdersPage() {
     const [userName, setUserName] = useState("ร้านค้า")
     const [orders, setOrders] = useState<any[]>([])
     const [filterStatus, setFilterStatus] = useState("ทั้งหมด")
+    const [currentPage, setCurrentPage] = useState(1)
+    const ORDERS_PER_PAGE = 10
 
     const filteredOrders = filterStatus === "ทั้งหมด"
         ? orders
@@ -272,7 +274,7 @@ export default function OrdersPage() {
                 {stats.map((card) => (
                     <div
                         key={card.label}
-                        onClick={() => setFilterStatus(card.label)}
+                        onClick={() => { setFilterStatus(card.label); setCurrentPage(1); }}
                         className={`rounded-[24px] p-5 shadow-sm border transition-all cursor-pointer group hover:-translate-y-1 ${filterStatus === card.label
                             ? `${card.color} border-transparent ring-2 ring-offset-2 ring-transparent shadow-md`
                             : 'bg-white border-[#f0f4f5] hover:shadow-md'
@@ -358,7 +360,7 @@ export default function OrdersPage() {
                                     </td>
                                 </tr>
                             ) : (
-                                filteredOrders.map((order) => (
+                                filteredOrders.slice((currentPage - 1) * ORDERS_PER_PAGE, currentPage * ORDERS_PER_PAGE).map((order) => (
                                     <tr key={order.id} className="hover:bg-[#fafeff] transition-colors group">
                                         <td className="px-8 py-6">
                                             <div className="flex flex-col whitespace-nowrap">
@@ -469,14 +471,22 @@ export default function OrdersPage() {
 
                 {/* Footer and Pagination */}
                 <div className="px-8 py-6 border-t border-[#f0f4f5] flex flex-col md:flex-row items-center justify-between gap-4">
-                    <p className="text-[12px] text-[#90a4ae] font-medium italic">
-                        การเปลี่ยนสถานะจะแจ้งเตือนลูกค้าโดยอัตโนมัติผ่านทางหน้าเว็บ
+                    <p className="text-[12px] text-[#90a4ae] font-medium">
+                        หน้า {currentPage} จาก {Math.max(1, Math.ceil(filteredOrders.length / ORDERS_PER_PAGE))} ({filteredOrders.length} รายการ)
                     </p>
                     <div className="flex items-center gap-2">
-                        <button className="px-5 py-2.5 bg-white border border-[#e5e7eb] rounded-xl text-xs font-bold text-[#90a4ae] hover:bg-gray-50 transition-all disabled:opacity-50">
+                        <button
+                            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                            disabled={currentPage <= 1}
+                            className="px-5 py-2.5 bg-white border border-[#e5e7eb] rounded-xl text-xs font-bold text-[#90a4ae] hover:bg-gray-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
                             ก่อนหน้า
                         </button>
-                        <button className="px-5 py-2.5 bg-[#06B6D4]/5 border border-[#06B6D4]/20 rounded-xl text-xs font-bold text-[#06B6D4] hover:bg-[#06B6D4] hover:text-white transition-all">
+                        <button
+                            onClick={() => setCurrentPage(p => Math.min(Math.ceil(filteredOrders.length / ORDERS_PER_PAGE), p + 1))}
+                            disabled={currentPage >= Math.ceil(filteredOrders.length / ORDERS_PER_PAGE)}
+                            className="px-5 py-2.5 bg-[#06B6D4]/5 border border-[#06B6D4]/20 rounded-xl text-xs font-bold text-[#06B6D4] hover:bg-[#06B6D4] hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-[#06B6D4]/5 disabled:hover:text-[#06B6D4]"
+                        >
                             ถัดไป
                         </button>
                     </div>
