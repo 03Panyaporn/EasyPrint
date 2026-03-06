@@ -156,7 +156,7 @@ export default function Sidebar() {
                             <h3 className="text-2xl font-black text-[#455a64] mb-2">ออกจากระบบ?</h3>
                             <p className="text-sm text-[#90a4ae] leading-relaxed mb-8">
                                 คุณแน่ใจหรือไม่ที่จะออกจากระบบร้านค้า?<br />
-                                ชั่นการทำงานปัจจุบันจะสิ้นสุดลง
+                                เซสชั่นการทำงานปัจจุบันจะสิ้นสุดลง
                             </p>
                             <div className="flex gap-3">
                                 <button

@@ -7,9 +7,10 @@ import {
 } from "recharts";
 import {
     DollarSign, ShoppingCart, Hourglass, Download, TrendingUp,
-    CheckCircle, User, Calendar, Filter
+    CheckCircle, User, Calendar, Filter, LogOut
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import MerchantProfile from "@/components/ui/shop/MerchantProfile";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface Order {
@@ -44,7 +45,6 @@ const PRESETS = [
 export default function ReportsPage() {
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
-    const [userName, setUserName] = useState("ร้านค้า");
     const [activePreset, setActivePreset] = useState<number | null>(30);
 
     // Date range state
@@ -64,11 +64,6 @@ export default function ReportsPage() {
 
     // ── Fetch ────────────────────────────────────────────────────────────────
     useEffect(() => {
-        try {
-            const u = JSON.parse(sessionStorage.getItem("user") || "{}");
-            if (u.name || u.email) setUserName(u.name || u.email);
-        } catch { }
-
         const fetchOrders = async () => {
             setLoading(true);
             const { data, error } = await supabase
@@ -196,17 +191,7 @@ export default function ReportsPage() {
                     <h1 className="text-3xl font-bold text-[#1e293b]">รายงาน</h1>
                     <p className="text-sm text-gray-400 mt-1">ข้อมูลเชิงลึกผลประกอบการร้านค้า</p>
                 </div>
-                <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-3 pl-4 border-l border-gray-200">
-                        <div className="text-right">
-                            <p className="text-sm font-semibold text-[#455a64]">EasyPrint</p>
-                            <p className="text-[11px] text-gray-400">{userName}</p>
-                        </div>
-                        <div className="w-10 h-10 rounded-full bg-[#06B6D4] flex items-center justify-center text-white shadow">
-                            <User size={20} />
-                        </div>
-                    </div>
-                </div>
+                <MerchantProfile />
             </div>
 
             <div className="max-w-7xl mx-auto space-y-6">

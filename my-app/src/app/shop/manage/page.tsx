@@ -1,8 +1,9 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Search, Info, UploadCloud, MapPin, AlertCircle, Save, User, Loader2, Check } from "lucide-react"
+import { Search, Info, UploadCloud, MapPin, AlertCircle, Save, User, Loader2, Check, LogOut } from "lucide-react"
 import { supabase } from "@/lib/supabase"
+import MerchantProfile from "@/components/ui/shop/MerchantProfile"
 
 export default function ManageShopPage() {
     const [isLoading, setIsLoading] = useState(true)
@@ -188,15 +189,7 @@ export default function ManageShopPage() {
                         <Toggle active={shopStatus} onChange={handleToggleShopStatus} />
                     </div>
 
-                    <div className="flex items-center gap-4 px-2 border-l border-[#e5e7eb] pl-6">
-                        <div className="text-right">
-                            <p className="text-sm font-semibold text-[#455a64]">{basicInfo.name || "Shop EasyPrint"}</p>
-                            <p className="text-[11px] font-medium text-gray-400">เจ้าของร้าน</p>
-                        </div>
-                        <div className="w-10 h-10 rounded-full bg-[#06B6D4] flex items-center justify-center text-white shadow-md">
-                            <User size={20} />
-                        </div>
-                    </div>
+                    <MerchantProfile />
                 </div>
             </div>
 
