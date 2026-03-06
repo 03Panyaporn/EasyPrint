@@ -221,9 +221,9 @@ function AuthModal({
 
           {mode === "login" && (
             <div className="text-right">
-              <a href="#" className="text-xs text-cyan-500 hover:text-cyan-600 transition-colors">
+              <Link href="/auth/forgot-password" className="text-xs text-cyan-500 hover:text-cyan-600 transition-colors">
                 ลืมรหัสผ่าน?
-              </a>
+              </Link>
             </div>
           )}
 

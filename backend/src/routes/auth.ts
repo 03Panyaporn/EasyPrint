@@ -136,6 +136,35 @@ authRoute.post('/logout', async (c) => {
 })
 
 // ==========================================
+// POST /api/auth/forgot-password — ขอ reset link
+// ==========================================
+authRoute.post('/forgot-password', async (c) => {
+    try {
+        const { email } = await c.req.json()
+
+        if (!email) {
+            return c.json({ error: 'กรุณาระบุอีเมล' }, 400)
+        }
+
+        const redirectTo = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/auth/reset-password`
+
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+            redirectTo,
+        })
+
+        if (error) {
+            console.error('Forgot password error:', error.message)
+        }
+
+        // Always return success to avoid email enumeration attacks
+        return c.json({ message: 'หากอีเมลนี้มีอยู่ในระบบ ระบบจะส่งลิงก์รีเซ็ตรหัสผ่านไปที่อีเมลของคุณ' })
+    } catch (err) {
+        console.error('Forgot password error:', err)
+        return c.json({ error: 'เกิดข้อผิดพลาดในระบบ' }, 500)
+    }
+})
+
+// ==========================================
 // POST /api/auth/change-password — เปลี่ยนรหัสผ่าน
 // ==========================================
 authRoute.post('/change-password', async (c) => {

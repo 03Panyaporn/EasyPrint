@@ -5,9 +5,7 @@ import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '@/context/AuthContext'
 
-function LoginContent() {
-    const searchParams = useSearchParams()
-    const redirectTo = searchParams.get('redirect') || '/customer'
+function LoginContent({ redirectTo }: { redirectTo: string }) {
     const { login: authLogin } = useAuth()
 
     const [email, setEmail] = useState('')
@@ -25,7 +23,7 @@ function LoginContent() {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password }),
-                credentials: 'include', // สำคัญ: เพื่อให้ Browser รับและเซ็ต HttpOnly Cookie
+                credentials: 'include',
             })
 
             const data = await res.json()
@@ -35,10 +33,8 @@ function LoginContent() {
                 return
             }
 
-            // เก็บข้อมูลใน AuthContext และ sessionStorage
             authLogin(data.user, data.session)
 
-            // Redirect ตามบทบาท (Role) — ให้ Middleware จัดการ role protection
             if (data.user.role === 'merchant') {
                 window.location.href = '/shop'
             } else {
@@ -52,7 +48,7 @@ function LoginContent() {
     }
 
     return (
-        <div className="flex items-center justify-center min-h-[calc(100vh-64px)] px-4">
+        <div className="flex items-center justify-center min-h-screen px-4 bg-gray-50">
             <div className="w-full max-w-sm bg-white rounded-2xl shadow-xl border border-gray-200 p-8">
                 {/* Logo */}
                 <div className="text-center mb-6">
@@ -113,7 +109,16 @@ function LoginContent() {
                     </button>
                 </form>
 
-                <div className="mt-6 text-center text-sm text-gray-500">
+                <div className="mt-3 text-center">
+                    <Link
+                        href="/auth/forgot-password"
+                        className="text-sm text-cyan-600 hover:text-cyan-700 hover:underline font-medium transition-colors"
+                    >
+                        ลืมรหัสผ่าน?
+                    </Link>
+                </div>
+
+                <div className="mt-4 text-center text-sm text-gray-500">
                     ยังไม่มีบัญชี?{' '}
                     <Link href="/auth/register" className="text-cyan-600 font-medium hover:underline">
                         สมัครสมาชิก
@@ -124,10 +129,16 @@ function LoginContent() {
     )
 }
 
+function LoginWithParams() {
+    const searchParams = useSearchParams()
+    const redirectTo = searchParams.get('redirect') || '/customer'
+    return <LoginContent redirectTo={redirectTo} />
+}
+
 export default function LoginPage() {
     return (
         <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Loading...</div>}>
-            <LoginContent />
+            <LoginWithParams />
         </Suspense>
     )
 }

@@ -67,7 +67,7 @@ export default function Navbar() {
             {/* Main Navbar */}
             <nav className="bg-white border-b border-[#D9D9D9] px-8 py-3 flex items-center justify-between sticky top-0 z-50 backdrop-blur-sm bg-white/95">
                 {/* โลโก้ EASYPRINT */}
-                <div className="flex items-center gap-2 group cursor-pointer">
+                <Link href="/" className="flex items-center gap-2 group">
                     <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#06B6D4] to-[#0891b2] flex items-center justify-center shadow-md group-hover:shadow-[#06B6D4]/40 group-hover:scale-105 transition-all duration-300">
                         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                             <polyline points="6 9 6 2 18 2 18 9" />
@@ -76,7 +76,7 @@ export default function Navbar() {
                         </svg>
                     </div>
                     <span className="text-[#06B6D4] font-bold text-xl tracking-wide group-hover:text-[#0891b2] transition-colors duration-200">EASYPRINT</span>
-                </div>
+                </Link>
 
                 {/* เมนูนำทางกลาง */}
                 <div className="flex items-center gap-8 text-gray-500 font-medium text-sm">
