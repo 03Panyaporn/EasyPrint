@@ -117,7 +117,7 @@ function FilePreviewModal({ item, onClose }: { item: CartItem; onClose: () => vo
 
 // ─── Main Checkout Page ───────────────────────────────────────────────────────
 export default function CheckoutPage() {
-    const { selectedItems, clearCart, clearSelection } = useCart();
+    const { selectedItems, removeSelectedItems } = useCart();
     const router = useRouter();
 
     const [proofFile, setProofFile] = useState<File | null>(null);
@@ -130,7 +130,8 @@ export default function CheckoutPage() {
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const grandTotal = selectedItems.reduce((sum, i) => sum + i.totalPrice, 0);
-    const isReady = proofFile !== null && wantReceipt !== null && agreedTerms && !isSubmitting;
+    const isFormComplete = proofFile !== null && wantReceipt !== null && agreedTerms;
+    const isReady = isFormComplete && !isSubmitting;
 
     const handleProofChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -230,9 +231,8 @@ export default function CheckoutPage() {
 
             if (itemsError) throw itemsError;
 
-            // If everything is successful, clear cart and redirect
-            clearSelection();
-            clearCart();
+            // If everything is successful, remove only the checked-out items and redirect
+            removeSelectedItems();
             router.push("/customer/tracking");
 
         } catch (error: any) {
@@ -514,7 +514,7 @@ export default function CheckoutPage() {
                             </div>
 
                             {/* Hint */}
-                            {!isReady && (
+                            {!isFormComplete && (
                                 <div className="flex items-center gap-2 px-3 py-2.5 bg-amber-50 border border-amber-200 rounded-xl">
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
                                         <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />

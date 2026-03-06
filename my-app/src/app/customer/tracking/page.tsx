@@ -549,7 +549,7 @@ export default function TrackingPage() {
                                                         {order.quantity}
                                                     </span>
                                                 </td>
-                                                <td className="py-4 px-4 text-center text-gray-700 font-semibold">{order.price?.toFixed(2) || "0.00"} <span className="text-gray-400 font-normal">฿</span></td>
+                                                <td className="py-4 px-4 text-center text-gray-700 font-semibold whitespace-nowrap">{order.price?.toFixed(2) || "0.00"} <span className="text-gray-400 font-normal">฿</span></td>
                                                 <td className="py-4 px-4 text-center">
                                                     <span className={`inline-flex items-center gap-1 whitespace-nowrap px-3 py-1.5 rounded-full text-[11px] font-semibold ${getStatusStyle(order.status)}`}>
                                                         <span className={`w-1.5 h-1.5 rounded-full ${order.status === "รอตรวจสอบสลิป" ? "bg-amber-500" :
