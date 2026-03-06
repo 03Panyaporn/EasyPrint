@@ -19,12 +19,10 @@ import {
     X,
     MessageSquare,
     LogOut,
-} from "lucide-react"
-import { supabase } from "@/lib/supabase"
-import MerchantProfile from "@/components/ui/shop/MerchantProfile"
     ShoppingCart,
 } from "lucide-react"
 import { supabase } from "@/lib/supabase"
+import MerchantProfile from "@/components/ui/shop/MerchantProfile"
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
     ResponsiveContainer, PieChart, Pie, Cell

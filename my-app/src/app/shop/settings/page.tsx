@@ -1,10 +1,8 @@
 "use client"
 
-import { useState } from "react"
-import { Search, Bell, Lock, AlertCircle, Save, CreditCard, UploadCloud, User, LogOut } from "lucide-react"
-import MerchantProfile from "@/components/ui/shop/MerchantProfile"
 import { useState, useEffect, useRef } from "react"
-import { Search, Bell, Lock, AlertCircle, Save, CreditCard, UploadCloud, User, Loader2, Check, XCircle, X } from "lucide-react"
+import { Search, Bell, Lock, AlertCircle, Save, CreditCard, UploadCloud, User, Loader2, Check, XCircle, X, LogOut } from "lucide-react"
+import MerchantProfile from "@/components/ui/shop/MerchantProfile"
 import { supabase } from "@/lib/supabase"
 
 export default function SettingsPage() {
