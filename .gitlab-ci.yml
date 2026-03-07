@@ -16,6 +16,7 @@ build_app:
   script:
     - cd backend && npm install
     - cd ../my-app
+    - npm install  # <--- เพิ่มบรรทัดนี้ครับ เพื่อให้ระบบรู้จักคำสั่ง next
 
     - export NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL
     - export NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
