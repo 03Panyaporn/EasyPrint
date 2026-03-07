@@ -8,19 +8,27 @@ import { chatRoute } from './routes/chat.js'
 
 const app = new Hono()
 
-// Middleware
+// --- 1. Middleware ---
 app.use('*', logger())
+
+// ปรับ CORS ให้ดึงค่าจาก Environment Variable
 app.use(
     '*',
     cors({
-        origin: (origin) => origin, // อนุญาตทุก origin ในช่วงพัฒนา (ช่วยเรื่อง port เปลี่ยน เช่น 3000 -> 3003)
+        // ในช่วงพัฒนาให้ใช้ origin ตามที่ส่งมา แต่ถ้า Production ให้ใช้จาก FRONTEND_URL
+        origin: (origin) => {
+            if (process.env.NODE_ENV === 'production') {
+                return process.env.FRONTEND_URL || origin
+            }
+            return origin
+        },
         allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
         allowHeaders: ['Content-Type', 'Authorization', 'Cookie'],
         credentials: true,
     })
 )
 
-// Routes
+// --- 2. Routes ---
 app.get('/', (c) => {
     return c.json({ message: 'EasyPrint Backend API', status: 'running' })
 })
@@ -36,12 +44,18 @@ app.route('/api/example', exampleRoute)
 app.route('/api/auth', authRoute)
 app.route('/api/chat', chatRoute)
 
-// Start server
-const port = Number(process.env.PORT ?? 3001)
+// --- 3. Start server (Conditional) ---
+// ส่วนนี้จะทำงานเฉพาะตอนรันในเครื่อง (npm run dev) 
+// แต่บน Vercel ระบบจะเรียกใช้ export default app ด้านล่างแทน
+if (process.env.NODE_ENV !== 'production') {
+    const port = Number(process.env.PORT ?? 3001)
+    console.log(`🚀 Server is running on http://localhost:${port}`)
+    serve({
+        fetch: app.fetch,
+        port,
+    })
+}
 
-console.log(`🚀 Server is running on http://localhost:${port}`)
-
-serve({
-    fetch: app.fetch,
-    port,
-})
+// --- 4. Export for Vercel ---
+// สำคัญมาก! ห้ามลืมบรรทัดนี้ เพราะ Vercel ต้องการตัวนี้เป็น Entry Point
+export default app
