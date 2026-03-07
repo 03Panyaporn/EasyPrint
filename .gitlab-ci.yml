@@ -16,19 +16,16 @@ build_app:
   script:
     - cd backend && npm install
     - cd ../my-app
-    - npm install  # <--- เพิ่มบรรทัดนี้ครับ เพื่อให้ระบบรู้จักคำสั่ง next
-
+    - npm install           # <--- **ต้องมีบรรทัดนี้ และต้องอยู่หลัง cd ../my-app**
     - export NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL
     - export NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
     - export NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
-
     - npm run build 
   artifacts:
     paths:
       - my-app/.next/
       - my-app/package.json
     expire_in: 1 day
-
 # ---------- 2. TEST ----------
 
 robot_tests:
