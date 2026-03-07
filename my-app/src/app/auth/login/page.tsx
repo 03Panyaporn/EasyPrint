@@ -4,6 +4,7 @@ import { useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '@/context/AuthContext'
+import { setAuthCookie } from '@/app/actions/auth'
 
 function LoginContent({ redirectTo }: { redirectTo: string }) {
     const { login: authLogin } = useAuth()
@@ -34,6 +35,10 @@ function LoginContent({ redirectTo }: { redirectTo: string }) {
             }
 
             authLogin(data.user, data.session)
+
+            // เซ็ต Cookie ให้ Next.js ฝั่ง frontend ด้วย Server Action 
+            // เพื่อให้ Middleware สามารถอ่าน cookie ได้ถูกต้องและไม่เกิด redirect loop
+            await setAuthCookie(data.session.access_token, data.user.role || 'customer')
 
             if (data.user.role === 'merchant') {
                 window.location.href = '/shop'

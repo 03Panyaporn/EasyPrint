@@ -1,6 +1,7 @@
 "use client"
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react"
+import { removeAuthCookie } from "@/app/actions/auth"
 
 interface User {
     id: string
@@ -53,6 +54,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     const logout = async () => {
         try {
+            // ลบ cookie บนฝั่ง frontend Next.js server เพื่อให้ middleware รู้ว่า logout แล้ว
+            await removeAuthCookie()
+
             const token = sessionStorage.getItem("access_token")
             await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/auth/logout`, {
                 method: "POST",
