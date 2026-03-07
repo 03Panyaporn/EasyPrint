@@ -1,54 +1,76 @@
-image: node:20
+variables:
+  SONAR_USER_HOME: "${CI_PROJECT_DIR}/.sonar"
+  GIT_DEPTH: "0"
 
 stages:
   - build
   - test
-  - staging
+  - sonarqube_scan
   - deploy
+
+# ---------- 1. BUILD ----------
 
 build_app:
   stage: build
+  image: node:20
   script:
     - cd backend && npm install
     - cd ../my-app
-    - npm install
+
     - export NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL
     - export NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
     - export NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
-    - npx next build --no-lint
+
+    - npm run build 
   artifacts:
     paths:
       - my-app/.next/
-      - my-app/public/
       - my-app/package.json
-      - backend/node_modules/
     expire_in: 1 day
 
-test_backend:
+# ---------- 2. TEST ----------
+
+robot_tests:
   stage: test
+  image: python:3.11-slim
   script:
-    - cd backend
-    - npm test || echo "Skipping tests"
+    - echo "Starting Automated Testing..."
 
-test_frontend:
-  stage: test
-  script:
-    - cd my-app
-    - npm run test:unit || echo "Skipping tests"
+    - pip install robotframework
+    - robot --outputdir ./results tests/
+  artifacts:
+    when: always
+    paths:
+      - ./results/
 
-deploy_to_staging:
-  stage: staging
-  script:
-    - echo "Deploying to staging environment..."
-  environment:
-    name: staging
+# ---------- 3. Code Quality Scan ----------
 
-deploy_to_production:
-  stage: deploy
+sonarcloud-check:
+  stage: sonarqube_scan
+  image:
+    name: sonarsource/sonar-scanner-cli:latest
+    entrypoint: [""]
+  cache:
+    key: "${CI_JOB_NAME}"
+    paths:
+      - .sonar/cache
   script:
-    - echo "Deploying to production environment..."
-  environment:
-    name: production
-  when: manual
+    - sonar-scanner
+
   only:
     - main
+
+# ---------- 4. DEPLOY Vercel ----------
+
+deploy-vercel:
+  stage: deploy
+  image: node:20
+  script:
+    - npm install --global vercel
+    - vercel pull --yes --environment=production --token=$VERCEL_TOKEN
+    - vercel build --prod --token=$VERCEL_TOKEN
+    - vercel deploy --prebuilt --prod --token=$VERCEL_TOKEN
+  only:
+    - main
+
+  when: manual
