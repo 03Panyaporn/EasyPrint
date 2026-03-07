@@ -4,6 +4,8 @@ import { useState, useEffect, Suspense } from "react"
 import Link from "next/link"
 import { useAuth } from "@/context/AuthContext"
 import { supabase } from "@/lib/supabase"
+import { useRouter } from "next/navigation"
+import { setAuthCookie } from "@/app/actions/auth"
 
 // ─────────────────────────────────────────────
 // Auth Modal Component
@@ -17,6 +19,8 @@ function AuthModal({
   onClose: () => void
   onSwitchMode: () => void
 }) {
+  const router = useRouter() // 👈 2. ประกาศเรียกใช้ router
+
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [name, setName] = useState("")
@@ -36,23 +40,29 @@ function AuthModal({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
-        credentials: "include", // สำคัญ: เพื่อให้เบราว์เซอร์รับและเซ็ต HttpOnly Cookie
+        credentials: "include",
       })
       const data = await res.json()
 
       if (!res.ok) {
         setError(data.error || "เข้าสู่ระบบไม่สำเร็จ")
+        setLoading(false) // 👈 แนะนำให้ใส่เผื่อเกิด error แล้วปุ่มค้าง
         return
       }
 
-      // ใช้ฟังก์ชัน login จาก AuthContext เพื่อความคงเส้นคงวาของข้อมูล
       authLogin(data.user, data.session)
 
-      // Redirect ตามบทบาท (Role)
+      // 👈 3. เพิ่มบรรทัดนี้: เซ็ต Cookie ให้ Next.js ฝั่ง frontend ก่อนเปลี่ยนหน้า
+      await setAuthCookie(data.session.access_token, data.user.role || 'customer')
+
+      // 👈 4. ปิด Modal ทันทีที่ล็อกอินเสร็จ (ช่วยให้ UI ดูสมูทขึ้น)
+      onClose()
+
+      // 👈 5. Redirect ด้วย router.push แทน window.location.href
       if (data.user.role === 'merchant') {
-        window.location.href = "/shop"
+        router.push("/shop")
       } else {
-        window.location.href = "/customer"
+        router.push("/customer")
       }
     } catch {
       setError("ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้")
